@@ -101,22 +101,125 @@ python-dotenv==1.0.0    # Load environment variables
 
 ## Installation Commands
 
-### Install all server dependencies:
+### Quick Install (Recommended)
+
+#### Install All Server Dependencies at Once:
 ```bash
 cd server
 npm install
 ```
+This single command installs all dependencies listed in `server/package.json` including:
+- express
+- mongoose
+- bcryptjs
+- jsonwebtoken
+- express-validator
+- express-rate-limit
+- cors
+- dotenv
+- nodemailer
+- nodemon (dev dependency)
 
-### Install all client dependencies:
+#### Install All Client Dependencies:
 ```bash
 cd client
 npm install
 ```
 
-### Install global development tools (optional):
+### Manual Installation (Individual Packages)
+
+If you need to install packages individually or add them one by one:
+
+#### Core Backend Dependencies:
 ```bash
+cd server
+
+# Core framework
+npm install express@^4.18.2
+npm install mongoose@^8.0.0
+
+# Authentication & Security
+npm install bcryptjs@^2.4.3
+npm install jsonwebtoken@^9.0.2
+npm install express-validator@^7.0.1
+npm install express-rate-limit@^7.1.5
+npm install cors@^2.8.5
+
+# Configuration
+npm install dotenv@^16.3.1
+
+# Email Service
+npm install nodemailer@^6.9.7
+
+# Development tools
+npm install --save-dev nodemon@^3.0.2
+```
+
+#### Installing bcrypt (Alternative to bcryptjs):
+```bash
+# If you prefer native bcrypt instead of bcryptjs:
+npm install bcrypt@^5.1.1
+
+# Note: bcrypt requires build tools on Windows
+# Windows users may need: npm install --global windows-build-tools
+```
+
+#### Frontend Dependencies (Choose ONE framework):
+
+**For Angular:**
+```bash
+cd client
+npm install -g @angular/cli
+ng new . --skip-install
+npm install
+```
+
+**For React:**
+```bash
+cd client
+npx create-react-app .
+# Or manually:
+npm install react@^18.2.0 react-dom@^18.2.0
+npm install react-router-dom@^6.20.0
+npm install axios@^1.6.0
+```
+
+**For Vue:**
+```bash
+cd client
+npm install vue@^3.3.0
+npm install vue-router@^4.2.0
+npm install axios@^1.6.0
+```
+
+### Global Development Tools (Optional but Recommended):
+```bash
+# Nodemon for auto-restarting server
 npm install -g nodemon
-npm install -g @angular/cli  # If using Angular
+
+# Angular CLI (if using Angular)
+npm install -g @angular/cli
+
+# TypeScript compiler (if needed)
+npm install -g typescript
+
+# MongoDB tools
+npm install -g mongodb-memory-server  # For testing
+```
+
+### Verify Installation:
+```bash
+# Check Node.js version
+node --version  # Should be v16+ 
+
+# Check npm version
+npm --version   # Should be v8+
+
+# List installed packages
+npm list --depth=0
+
+# Check for vulnerabilities
+npm audit
 ```
 
 ## Version Compatibility
@@ -176,4 +279,5 @@ netstat -ano | findstr :3000  # Windows
 
 # Kill the process or change PORT in .env
 ```
+
 

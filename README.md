@@ -3,7 +3,6 @@
 A full-stack MEAN (MongoDB, Express, Angular/React, Node.js) web application for managing tutoring appointments at the IT Learning Center.
 
 ##  Table of Contents
-- [Team Members](#team-members)
 - [Project Overview](#project-overview)
 - [Features](#features)
 - [Tech Stack](#tech-stack)

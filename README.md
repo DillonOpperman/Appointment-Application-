@@ -31,7 +31,7 @@ The IT Learning Center Appointment System is designed to streamline the process 
 
 ### For Students (Authenticated)
 -  View tutoring hours and available time slots
--  Book appointments for IT 179 (and other supported courses)
+-  Book appointments for IT 354 (and other supported courses)
 -  Cancel appointments (with defined rules)
 -  Receive email confirmations for bookings and cancellations
 

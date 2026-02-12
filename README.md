@@ -1,119 +1,131 @@
-IT Learning Center Appointment System
+# IT Learning Center Appointment System
+
 A full-stack MEAN (MongoDB, Express, Angular/React, Node.js) web application for managing tutoring appointments at the IT Learning Center.
-Table of Contents
 
-Team Members
-Project Overview
-Features
-Tech Stack
-Prerequisites
-Installation
-Environment Variables
-Running the Application
-Project Structure
-API Documentation
-Security
-External APIs
-Contributing
-
+##  Table of Contents
+- [Team Members](#team-members)
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Environment Variables](#environment-variables)
+- [Running the Application](#running-the-application)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Security](#security)
+- [External APIs](#external-apis)
 
 
+##  Project Overview
 
-
-Project Overview
 The IT Learning Center Appointment System is designed to streamline the process of booking tutoring sessions for students and managing tutor availability. The system reduces time waste by providing a clear, accessible platform for scheduling and managing appointments.
-Key Objectives
 
-Enable students to easily book tutoring appointments
-Allow tutors to manage their schedules and track sessions
-Provide administrators with tools to oversee operations and manage users
-Send automated email confirmations and reminders
-Maintain audit trails for administrative actions
+### Key Objectives
+- Enable students to easily book tutoring appointments
+- Allow tutors to manage their schedules and track sessions
+- Provide administrators with tools to oversee operations and manage users
+- Send automated email confirmations and reminders
+- Maintain audit trails for administrative actions
 
- Features
-For Students (Authenticated)
+##  Features
 
- View tutoring hours and available time slots
- Book appointments for IT 179 (and other supported courses)
- Cancel appointments (with defined rules)
- Receive email confirmations for bookings and cancellations
+### For Students (Authenticated)
+-  View tutoring hours and available time slots
+-  Book appointments for IT 179 (and other supported courses)
+-  Cancel appointments (with defined rules)
+-  Receive email confirmations for bookings and cancellations
 
-For Tutors (Authenticated)
+### For Tutors (Authenticated)
+-  View appointments during their assigned working hours
+-  Add comments and notes to tutoring sessions
+-  Mark student no-shows
+-  Record actual session start and end times
 
-View appointments during their assigned working hours
-Add comments and notes to tutoring sessions
-Mark student no-shows
-Record actual session start and end times
+### For Administrators (Authenticated)
+-  Cancel any appointment with audit trail
+-  Manage tutoring hours, availability, and blackout dates
+-  View and filter all appointments (by date, student, course)
+-  Add, activate, and deactivate tutors and students
+-  Assign tutor working hours
+-  Receive email confirmations and reminders
 
-For Administrators (Authenticated)
+### For Public Users (Non-Authenticated)
+-  View general tutoring hours and center information
 
- Cancel any appointment with audit trail
- Manage tutoring hours, availability, and blackout dates
- View and filter all appointments (by date, student, course)
- Add, activate, and deactivate tutors and students
- Assign tutor working hours
- Receive email confirmations and reminders
+## 🛠 Tech Stack
 
-For Public Users (Non-Authenticated)
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web application framework
+- **MongoDB** - NoSQL database
+- **Mongoose** - MongoDB object modeling
+- **bcryptjs** - Password hashing
+- **jsonwebtoken** - JWT authentication
+- **Nodemailer** - Email service integration
 
- View general tutoring hours and center information
+### Frontend
+- **[Angular/React/Vue]** - Frontend framework (TBD)
+- **HTML5/CSS3** - Markup and styling
+- **JavaScript/TypeScript** - Programming language
 
- Tech Stack
-Backend
+### Security & Middleware
+- **express-validator** - Input validation
+- **express-rate-limit** - Rate limiting
+- **cors** - Cross-origin resource sharing
+- **dotenv** - Environment variable management
 
-Node.js - Runtime environment
-Express.js - Web application framework
-MongoDB - NoSQL database
-Mongoose - MongoDB object modeling
-bcryptjs - Password hashing
-jsonwebtoken - JWT authentication
-Nodemailer - Email service integration
+### External APIs
+- **Email Service** - Nodemailer/SendGrid for confirmations
+- **[Additional API]** - [Google Calendar/Twilio SMS/etc.] (TBD)
 
-Frontend
+##  Prerequisites
 
-[Angular/React/Vue] - Frontend framework (TBD)
-HTML5/CSS3 - Markup and styling
-JavaScript/TypeScript - Programming language
-
-Security & Middleware
-
-express-validator - Input validation
-express-rate-limit - Rate limiting
-cors - Cross-origin resource sharing
-dotenv - Environment variable management
-
-External APIs
-
-Email Service - Nodemailer/SendGrid for confirmations
-[Additional API] - [Google Calendar/Twilio SMS/etc.] (TBD)
-
- Prerequisites
 Before you begin, ensure you have the following installed:
+- **Node.js** (v16.x or higher) - [Download here](https://nodejs.org/)
+- **MongoDB** (v5.x or higher) - [Download here](https://www.mongodb.com/try/download/community)
+- **Git** - [Download here](https://git-scm.com/downloads)
+- **npm** (comes with Node.js) or **yarn**
 
-Node.js (v16.x or higher) - Download here
-MongoDB (v5.x or higher) - Download here
-Git - Download here
-npm (comes with Node.js) or yarn
+##  Installation
 
- Installation
-1. Clone the Repository
-bashgit clone https://github.com/DillonOpperman/Appointment-Application-.git
+### 1. Clone the Repository
+```bash
+git clone https://github.com/DillonOpperman/Appointment-Application-.git
 cd Appointment-Application-
-2. Switch to Develop Branch
-bashgit checkout develop
-3. Install Server Dependencies
-bashcd server
+```
+
+### 2. Switch to Develop Branch
+```bash
+git checkout develop
+```
+
+### 3. Install Server Dependencies
+```bash
+cd server
 npm install
-4. Install Client Dependencies
-bashcd ../client
+```
+
+### 4. Install Client Dependencies
+```bash
+cd ../client
 npm install
-5. Set Up Environment Variables
-bashcd ../server
+```
+
+### 5. Set Up Environment Variables
+```bash
+cd ../server
 cp .env.example .env
-Now edit the .env file with your actual credentials (see Environment Variables section).
- Environment Variables
-Create a .env file in the server/ directory with the following variables:
-env# Server Configuration
+```
+
+Now edit the `.env` file with your actual credentials (see [Environment Variables](#environment-variables) section).
+
+##  Environment Variables
+
+Create a `.env` file in the `server/` directory with the following variables:
+
+```env
+# Server Configuration
 PORT=3000
 NODE_ENV=development
 
@@ -135,33 +147,47 @@ EMAIL_PASSWORD=your_app_specific_password
 GOOGLE_CALENDAR_API_KEY=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-Getting Email Credentials (Gmail)
+```
 
-Go to your Google Account settings
-Enable 2-Factor Authentication
-Generate an App Password: https://myaccount.google.com/apppasswords
-Use this app password in EMAIL_PASSWORD
+### Getting Email Credentials (Gmail)
+1. Go to your Google Account settings
+2. Enable 2-Factor Authentication
+3. Generate an App Password: [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+4. Use this app password in `EMAIL_PASSWORD`
 
- IMPORTANT: Never commit your .env file to GitHub! It's already in .gitignore.
- Running the Application
-Development Mode
-Terminal 1 - Start MongoDB (if running locally):
-bashmongod
-Terminal 2 - Start Backend Server:
-bashcd server
+ **IMPORTANT**: Never commit your `.env` file to GitHub! It's already in `.gitignore`.
+
+##  Running the Application
+
+### Development Mode
+
+**Terminal 1 - Start MongoDB** (if running locally):
+```bash
+mongod
+```
+
+**Terminal 2 - Start Backend Server**:
+```bash
+cd server
 npm run dev
 # Server runs on http://localhost:3000
-Terminal 3 - Start Frontend:
-bashcd client
+```
+
+**Terminal 3 - Start Frontend**:
+```bash
+cd client
 npm start
 # Client runs on http://localhost:4200 (Angular) or http://localhost:3000 (React)
-Testing the Application
+```
 
-Open your browser to the client URL
-You should see the landing page
-Register a new account or use test credentials (if seeded)
+### Testing the Application
+1. Open your browser to the client URL
+2. You should see the landing page
+3. Register a new account or use test credentials (if seeded)
 
- Project Structure
+##  Project Structure
+
+```
 Appointment-Application/
 ├── client/                      # Frontend application
 │   ├── src/
@@ -195,107 +221,107 @@ Appointment-Application/
 │
 ├── .gitignore                   # Git ignore rules
 └── README.md                    # This file
- API Documentation
-See docs/api-documentation.md for detailed API endpoint documentation.
-Base URL
+```
+
+##  API Documentation
+
+See [docs/api-documentation.md](docs/api-documentation.md) for detailed API endpoint documentation.
+
+### Base URL
+```
 http://localhost:3000/api
-Authentication Endpoints
+```
 
-POST /api/auth/register - Register new user
-POST /api/auth/login - Login user
-GET /api/auth/me - Get current user
+### Authentication Endpoints
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user
 
-Appointment Endpoints
+### Appointment Endpoints
+- `GET /api/appointments` - Get all appointments (filtered by role)
+- `POST /api/appointments` - Book new appointment
+- `DELETE /api/appointments/:id` - Cancel appointment
+- `PATCH /api/appointments/:id` - Update appointment (tutor comments, etc.)
 
-GET /api/appointments - Get all appointments (filtered by role)
-POST /api/appointments - Book new appointment
-DELETE /api/appointments/:id - Cancel appointment
-PATCH /api/appointments/:id - Update appointment (tutor comments, etc.)
+### Availability Endpoints
+- `GET /api/availability` - Get tutoring hours
+- `POST /api/availability` - Create availability block (admin)
+- `PATCH /api/availability/:id` - Update availability (admin)
 
-Availability Endpoints
+### User Management Endpoints (Admin)
+- `GET /api/users` - Get all users
+- `POST /api/users` - Create user
+- `PATCH /api/users/:id` - Activate/deactivate user
 
-GET /api/availability - Get tutoring hours
-POST /api/availability - Create availability block (admin)
-PATCH /api/availability/:id - Update availability (admin)
+##  Security
 
-User Management Endpoints (Admin)
-
-GET /api/users - Get all users
-POST /api/users - Create user
-PATCH /api/users/:id - Activate/deactivate user
-
- Security
 This application implements the following security controls:
-Authentication & Authorization
 
- JWT-based authentication
- Role-based access control (admin, tutor, student)
- Protected routes requiring valid tokens
+### Authentication & Authorization
+-  JWT-based authentication
+-  Role-based access control (admin, tutor, student)
+-  Protected routes requiring valid tokens
 
-Data Security
+### Data Security
+-  Password hashing with bcrypt (salt rounds: 10)
+-  No plain-text password storage
+-  Environment variables for sensitive data
+-  Secrets management (never committed to GitHub)
 
- Password hashing with bcrypt (salt rounds: 10)
- No plain-text password storage
- Environment variables for sensitive data
- Secrets management (never committed to GitHub)
+### Input Validation & Sanitization
+-  Server-side validation on all inputs
+-  express-validator for request validation
+-  MongoDB injection prevention
 
-Input Validation & Sanitization
+### Rate Limiting
+-  Rate limiting on authentication endpoints (5 attempts per 15 minutes)
+-  Rate limiting on booking endpoints (10 bookings per hour)
+-  Rate limiting on cancellation endpoints
 
- Server-side validation on all inputs
- express-validator for request validation
- MongoDB injection prevention
+### Audit & Logging
+-  Audit trail for all admin actions
+-  Notification logs for emails sent
+-  Timestamp tracking on all database records
 
-Rate Limiting
+See [docs/security-checklist.md](docs/security-checklist.md) for detailed security verification.
 
- Rate limiting on authentication endpoints (5 attempts per 15 minutes)
- Rate limiting on booking endpoints (10 bookings per hour)
- Rate limiting on cancellation endpoints
+##  External APIs
 
-Audit & Logging
+### Email Service (Nodemailer)
+- **Purpose**: Send booking confirmations and cancellation notifications
+- **Provider**: Gmail SMTP / SendGrid
+- **Integration**: Triggered on appointment create/cancel actions
 
- Audit trail for all admin actions
- Notification logs for emails sent
- Timestamp tracking on all database records
-
-See docs/security-checklist.md for detailed security verification.
- External APIs
-Email Service (Nodemailer)
-
-Purpose: Send booking confirmations and cancellation notifications
-Provider: Gmail SMTP / SendGrid
-Integration: Triggered on appointment create/cancel actions
-
-[Additional API - TBD]
+### [Additional API - TBD]
 Options being considered:
+- **Google Calendar API** - Sync appointments to admin calendar
+- **Twilio SMS** - Send SMS reminders to students
+- **Holiday API** - Auto-block appointments on holidays
+- **reCAPTCHA** - Prevent booking abuse
 
-Google Calendar API - Sync appointments to admin calendar
-Twilio SMS - Send SMS reminders to students
-Holiday API - Auto-block appointments on holidays
-reCAPTCHA - Prevent booking abuse
+### Branching Strategy
+- `main` - Production-ready code (protected)
+- `develop` - Integration branch
+- `feature/feature-name` - New features
+- `bugfix/bug-name` - Bug fixes
 
- Contributing
-Branching Strategy
+### Workflow
+1. Always pull latest changes from `develop`
+2. Create a new feature branch: `git checkout -b feature/your-feature`
+3. Make your changes and commit with meaningful messages
+4. Push to GitHub: `git push origin feature/your-feature`
+5. Create a Pull Request to `develop`
+6. Wait for at least one teammate review and approval
+7. Merge after approval
 
-main - Production-ready code (protected)
-develop - Integration branch
-feature/feature-name - New features
-bugfix/bug-name - Bug fixes
+### Commit Message Guidelines
+- Use present tense: "Add feature" not "Added feature"
+- Be descriptive: "Add email validation to booking form"
+- Reference issues when applicable: "Fix #123: Resolve booking overlap"
 
-Workflow
+---
 
-Always pull latest changes from develop
-Create a new feature branch: git checkout -b feature/your-feature
-Make your changes and commit with meaningful messages
-Push to GitHub: git push origin feature/your-feature
-Create a Pull Request to develop
-Wait for at least one teammate review and approval
-Merge after approval
+---
 
-Commit Message Guidelines
-
-Use present tense: "Add feature" not "Added feature"
-Be descriptive: "Add email validation to booking form"
-Reference issues when applicable: "Fix #123: Resolve booking overlap"
-
-Last Updated: 2/12/2026
-Checkpoint Status:  In Progress
+**Last Updated**: 2/12/2026
+**Checkpoint Status**:  In Progress 

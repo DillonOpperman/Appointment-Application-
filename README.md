@@ -53,7 +53,7 @@ The IT Learning Center Appointment System is designed to streamline the process 
 ### For Public Users (Non-Authenticated)
 -  View general tutoring hours and center information
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 ### Backend
 - **Node.js** - Runtime environment

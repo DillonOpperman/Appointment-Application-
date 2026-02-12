@@ -1,0 +1,179 @@
+# IT Learning Center - Dependency Requirements
+
+This document outlines all required dependencies for the IT Learning Center Appointment System.
+
+## Node.js Dependencies
+
+### Server Dependencies (server/package.json)
+
+#### Core Framework
+- express@^4.18.2 - Web application framework for Node.js
+- mongoose@^8.0.0 - MongoDB object modeling tool
+
+#### Authentication & Security
+- bcryptjs@^2.4.3 - Password hashing library
+- jsonwebtoken@^9.0.2 - JSON Web Token implementation
+- express-validator@^7.0.1 - Request validation middleware
+- express-rate-limit@^7.1.5 - Rate limiting middleware
+- cors@^2.8.5 - Cross-origin resource sharing
+
+#### Environment & Configuration
+- dotenv@^16.3.1 - Environment variable management
+
+#### Email Service
+- nodemailer@^6.9.7 - Email sending library
+
+#### Development Dependencies
+- nodemon@^3.0.2 - Auto-restart server on file changes
+
+### Client Dependencies (client/package.json)
+
+**Note**: These will vary based on your chosen frontend framework.
+
+#### If using Angular:
+- @angular/core@^17.0.0
+- @angular/common@^17.0.0
+- @angular/router@^17.0.0
+- @angular/forms@^17.0.0
+- @angular/platform-browser@^17.0.0
+- typescript@~5.2.2
+- rxjs@~7.8.0
+
+#### If using React:
+- react@^18.2.0
+- react-dom@^18.2.0
+- react-router-dom@^6.20.0
+- axios@^1.6.0
+
+#### If using Vue:
+- vue@^3.3.0
+- vue-router@^4.2.0
+- axios@^1.6.0
+
+## Python Dependencies (Optional)
+
+If you use Python for any scripts or tools:
+
+```
+# requirements.txt (if needed)
+pymongo==4.6.0          # MongoDB driver for Python
+python-dotenv==1.0.0    # Load environment variables
+```
+
+## System Requirements
+
+### Required Software
+- Node.js v16.x or higher
+- npm v8.x or higher (or yarn v1.22.x+)
+- MongoDB v5.x or higher
+- Git v2.x or higher
+
+### Operating System
+- Windows 10/11
+- macOS 10.15+
+- Linux (Ubuntu 20.04+, Debian 10+, etc.)
+
+## Database
+
+### MongoDB
+- Local installation OR
+- MongoDB Atlas (cloud-hosted)
+- Minimum version: 5.0
+
+## External Service Requirements
+
+### Email Service
+- Gmail account with App Password OR
+- SendGrid API key OR
+- Other SMTP service credentials
+
+### Optional External APIs
+- Google Calendar API credentials (if implementing calendar sync)
+- Twilio account and API keys (if implementing SMS)
+- reCAPTCHA keys (if implementing bot prevention)
+
+## Development Tools (Recommended)
+
+- Visual Studio Code or similar IDE
+- Postman or similar API testing tool
+- MongoDB Compass (GUI for MongoDB)
+- Git GUI client (optional)
+
+## Installation Commands
+
+### Install all server dependencies:
+```bash
+cd server
+npm install
+```
+
+### Install all client dependencies:
+```bash
+cd client
+npm install
+```
+
+### Install global development tools (optional):
+```bash
+npm install -g nodemon
+npm install -g @angular/cli  # If using Angular
+```
+
+## Version Compatibility
+
+| Package | Minimum Version | Recommended Version |
+|---------|----------------|-------------------|
+| Node.js | 16.0.0 | 18.x LTS |
+| npm | 8.0.0 | 9.x |
+| MongoDB | 5.0.0 | 6.x |
+| Express | 4.18.0 | 4.18.2 |
+| Mongoose | 7.0.0 | 8.0.0 |
+
+## Security Notes
+
+ **Never commit node_modules to GitHub!**
+- It's already in .gitignore
+- Dependencies are installed via `npm install`
+
+ **Keep dependencies updated:**
+```bash
+npm outdated  # Check for updates
+npm update    # Update to latest compatible versions
+```
+
+ **Audit for vulnerabilities:**
+```bash
+npm audit
+npm audit fix
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Problem**: `npm install` fails with permission errors
+**Solution**: 
+```bash
+# On Mac/Linux:
+sudo npm install -g npm
+
+# On Windows:
+# Run terminal as Administrator
+```
+
+**Problem**: MongoDB connection fails
+**Solution**: 
+- Ensure MongoDB is running: `mongod`
+- Check connection string in `.env` file
+- Verify network access if using MongoDB Atlas
+
+**Problem**: Port already in use
+**Solution**: 
+```bash
+# Find process using port 3000
+lsof -i :3000  # Mac/Linux
+netstat -ano | findstr :3000  # Windows
+
+# Kill the process or change PORT in .env
+```
+

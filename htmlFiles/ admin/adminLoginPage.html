@@ -1,14 +1,36 @@
 <!DOCTYPE html> 
-<html>
-    <head>
-        <title> Admin Login Page </title>
-    </head>
+    <html>
 
-    <body>
-        <form action='/submitAdminLogin' method="POST"> 
-            Email: <input type="text" name="adminEmail" />
-            Password: <input type="password" name="adminPassword" /> 
-            <input type="submit" />
-        </form>    
-    </body>
-</html>
+        <head>
+            <title> Admin Login Page - IT Learning Center</title>
+            <link rel="stylesheet" href="/cssFiles/admin/adminStyle.css">
+        </head>
+
+        <body>
+
+            <header class="staticHeader">
+                <h1>IT Learning Center</h1>
+                    <nav class="staticNavBar">
+                        <a href=" ">Home</a>
+                        <a href=" ">View</a>
+                        <a href=" ">View Hours</a>
+                        <a href="/adminLogin">Admin Login</a>
+                    </nav>
+            </header>
+
+        <div class="loginDiv">
+                <h2>Admin Login</h2>
+                    <form action='/submitAdminLogin' method="POST"> 
+                        Email: <input type="text" name="adminEmail" />
+                        Password: <input type="password" name="adminPassword" /> 
+                        <input type="submit" />
+                    </form>    
+                
+            </div> 
+
+            <footer class="staticFooter">
+                    2026 IT Learning Center Appointment System. Group Project.
+            </footer>
+
+        </body>
+    </html>

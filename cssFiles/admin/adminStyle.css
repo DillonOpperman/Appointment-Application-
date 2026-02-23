@@ -1,0 +1,55 @@
+.staticHeader {
+    background-color: #ce1126;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.staticHeader h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.staticNavBar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 15px;
+}
+
+.staticNavBar a:hover {
+    text-decoration: underline;
+}
+
+.staticFooter{
+    background-color: #2c3e50;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 14px;
+}
+
+.dashboardLayout {
+    display: flex;
+    min-height: 80vh;
+}
+
+.sidebar{
+    width: 200px;
+    background-color: #f4f4f4;
+    padding: 20px;
+}
+
+.mainContent {
+    padding: 20px;
+    flex: 1;
+}
+
+.tabContent {
+    display: none;
+}
+
+.activeTab {
+    display: block;
+}

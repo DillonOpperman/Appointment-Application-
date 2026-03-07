@@ -1,0 +1,43 @@
+<%- include("../Includes/_header") %>
+
+<div class="dashboardLayout">
+
+    <div class="sidebar">
+        <h2>Admin Control</h2>
+        <button onclick="openTab('appointments')">Appointments</button>
+        <button onclick="openTab('hours')">Manage Hours</button>
+        <button onclick="openTab('users')">Manage Users</button>
+        <a href="/adminLogin">Logout</a>
+    </div>
+
+    <div class="mainContent">
+
+        <div id="appointments" class="tabContent activeTab">
+            <h2>View & Cancel Appointments</h2>
+            <p>Appointments table will go here</p>
+        </div>
+
+        <div id="hours" class="tabContent">
+            <h2>Tutoring Hours & Availability</h2>
+            <p>Hours form will go here</p>
+        </div>
+
+        <div id="users" class="tabContent">
+            <h2>Manage Tutors & Students</h2>
+            <p>Users table will go here</p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function openTab(tabId) {
+        var contents = document.getElementsByClassName("tabContent");
+        for (var i = 0; i < contents.length; i++) {
+            contents[i].classList.remove("activeTab");
+        }
+        document.getElementById(tabId).classList.add("activeTab");
+    }
+</script>
+
+<%- include("../Includes/_footer") %>

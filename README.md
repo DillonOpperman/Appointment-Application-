@@ -158,6 +158,29 @@ TWILIO_AUTH_TOKEN=
 
 ##  Running the Application
 
+### MongoDB Atlas Quick Setup (Recommended for Team)
+
+1. Create a free Atlas cluster.
+2. Create a database user (username/password).
+3. In **Network Access**, add your current IP (or `0.0.0.0/0` temporarily for testing).
+4. In Atlas, copy your SRV connection string.
+5. In the project root, copy `.env.example` to `.env` and set:
+
+```env
+PORT=3001
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/appointment_app?retryWrites=true&w=majority&appName=<app-name>
+JWT_SECRET=<long-random-secret>
+```
+
+6. Install and run from project root:
+
+```bash
+npm install
+npm run start
+```
+
+Server should start on `http://localhost:3001`.
+
 ### Development Mode
 
 **Terminal 1 - Start MongoDB** (if running locally):

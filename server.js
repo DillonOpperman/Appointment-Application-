@@ -1,10 +1,25 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const User = require('./models/User');
 app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 const PORT = process.env.PORT || 3001
 
 app.use('/cssFiles', express.static(path.join(__dirname, 'cssFiles')));
+app.use('/api/auth', authRoutes);
+
+app.get('/', (req, res) => {
+    res.redirect('/home');
+});
+
+app.get('/home', (req, res) => {
+    res.sendFile(path.join(__dirname, 'htmlFiles/home/home.html'));
+});
 
 app.get('/studentLogin',(req, res) => {res.sendFile(path.join(__dirname,'htmlFiles/student/loginPage.html'));});
 app.post('/submitStudentLogin',(req,res) => {res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword); console.log(req.body);});
@@ -14,7 +29,7 @@ app.get('/adminDashboard', (req, res) => {
 });
 
 app.get('/adminLogin',(req, res) => {res.sendFile(path.join(__dirname,'htmlFiles/ admin/adminLoginPage.html'));});
-app.post('/submitAdminLogin',(req,res) => {res.send("Submitted email: " + req.body.adminEmail + " submitted password: " + req.body.adminPassword); console.log(req.body);});
+app.post('/submitAdminLogin',(req,res) => {console.log(req.body); res.redirect('/adminDashboard');});
 
 
 
@@ -25,12 +40,66 @@ app.get('/tutorLogin', (req, res) => {
 app.get('/tutorDashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'htmlFiles/tutor/tutorDashboard.html'));
 });
-app.post('/submitTutorLogin', (req, res) => {
-    res.send("Submitted tutor email: " + req.body.tutorEmail + " Submitted tutor pass: " + req.body.tutorPassword);
-    console.log(req.body);
+app.get('/tutorAppointments', (req, res) => {
+    res.sendFile(path.join(__dirname, 'htmlFiles/tutor/tutorAppointments.html'));
+});
+app.get('/tutorHours', (req, res) => {
+    res.sendFile(path.join(__dirname, 'htmlFiles/tutor/tutorHours.html'));
+});
+app.post('/submitTutorLogin', async (req, res) => {
+    try {
+        const email = (req.body.tutorEmail || '').toLowerCase().trim();
+        const password = req.body.tutorPassword || '';
+
+        const user = await User.findOne({ email, role: 'tutor', active: true });
+        if (!user) {
+            return res.status(401).send('Invalid tutor credentials.');
+        }
+
+        const isMatch = await bcrypt.compare(password, user.passwordHash);
+        if (!isMatch) {
+            return res.status(401).send('Invalid tutor credentials.');
+        }
+
+        return res.redirect('/tutorDashboard');
+    } catch (error) {
+        return res.status(500).send('Tutor login failed.');
+    }
 });
 
-app.listen(PORT, () =>{
-    console.log('Server running on port', PORT);
-});
+async function ensureTutorSeedUser() {
+    const tutorEmail = 'dlopper@ilstu.edu';
+    const tutorPassword = 'RyzenDell3D!';
+
+    const existingTutor = await User.findOne({ email: tutorEmail.toLowerCase() });
+    if (existingTutor) {
+        return;
+    }
+
+    const passwordHash = await bcrypt.hash(tutorPassword, 12);
+    await User.create({
+        role: 'tutor',
+        name: 'D Lopper',
+        email: tutorEmail,
+        passwordHash,
+        active: true
+    });
+
+    console.log('Seeded tutor test user:', tutorEmail);
+}
+
+async function startServer() {
+    try {
+        await connectDB();
+        await ensureTutorSeedUser();
+        app.listen(PORT, () => {
+            console.log('Server running on port', PORT);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error.message);
+        process.exit(1);
+    }
+}
+
+startServer();
 

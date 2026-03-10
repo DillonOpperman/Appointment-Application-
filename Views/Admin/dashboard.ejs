@@ -14,8 +14,46 @@
 
         <div id="appointments" class="tabContent activeTab">
             <h2>View & Cancel Appointments</h2>
-            <p>Appointments table will go here</p>
+            <% if (appointments.length === 0) { %>
+                <p>No appointments found.</p>
+            <% } else { %>
+                <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Tutor</th>
+                            <th>Course</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% appointments.forEach(function(appt) { %>
+                        <tr>
+                            <td><%= appt.student ? appt.student.name : 'N/A' %></td>
+                            <td><%= appt.tutor ? appt.tutor.name : 'N/A' %></td>
+                            <td><%= appt.course %></td>
+                            <td><%= new Date(appt.start).toLocaleString() %></td>
+                            <td><%= new Date(appt.end).toLocaleString() %></td>
+                            <td><%= appt.status %></td>
+                            <td>
+                                <% if (appt.status === 'booked') { %>
+                                <form action="/cancelAppointment/<%= appt._id %>" method="POST">
+                                    <button type="submit">Cancel</button>
+                                </form>
+                                <% } else { %>
+                                    —
+                                <% } %>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
         </div>
+
 
         <div id="hours" class="tabContent">
             <h2>Tutoring Hours & Availability</h2>

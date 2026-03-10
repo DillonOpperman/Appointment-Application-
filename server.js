@@ -3,33 +3,51 @@ const app = express();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
-const connectDB = require('./Servers/Databases/connect');
-const authRoutes = require('./Servers/routes/authRoutes');
+
+
+const connectDB = require('./Servers/Database/connect');
+const authRoutes = require('./Servers/Routes/authRoutes');
+const adminRoutes = require('./Servers/Routes/adminRoutes');
 const User = require('./Servers/Model/User');
+
+
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
+
 const PORT = process.env.PORT || 3001
 
+// View engine for EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'Views'));
+
+// Static files
 app.use('/assets', express.static(path.join(__dirname, 'Assets')));
+
+// Routes 
 app.use('/api/auth', authRoutes);
+app.use('/', adminRoutes);
 
 app.get('/', (req, res) => {
-    res.redirect('/home');
+ res.redirect('/home');
 });
 
+// Home
 app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'Views/html/home/home.html'));
 });
 
-app.get('/studentLogin',(req, res) => {res.sendFile(path.join(__dirname,'Views/html/student/loginPage.html'));});
-app.post('/submitStudentLogin',(req,res) => {res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword); console.log(req.body);});
+// Student Routes 
+app.get('/studentLogin',(req, res) => {
+    res.sendFile(path.join(__dirname,'Views/html/student/loginPage.html'));});
+app.post('/submitStudentLogin',(req,res) => {
+    res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword); console.log(req.body);});
 
-app.get('/adminDashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Views/html/admin/adminDashboard.html'));
-});
+//app.get('/adminDashboard', (req, res) => {
+//    res.sendFile(path.join(__dirname, 'Views/html/admin/adminDashboard.html'));
+//});
 
-app.get('/adminLogin',(req, res) => {res.sendFile(path.join(__dirname,'Views/html/admin/adminLoginPage.html'));});
-app.post('/submitAdminLogin',(req,res) => {console.log(req.body); res.redirect('/adminDashboard');});
+//app.get('/adminLogin',(req, res) => {res.sendFile(path.join(__dirname,'Views/html/admin/adminLoginPage.html'));});
+//app.post('/submitAdminLogin',(req,res) => {console.log(req.body); res.redirect('/adminDashboard');});
 
 
 

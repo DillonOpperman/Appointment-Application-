@@ -8,6 +8,7 @@ require('dotenv').config();
 const connectDB = require('./Servers/Database/connect');
 const authRoutes = require('./Servers/Routes/authRoutes');
 const adminRoutes = require('./Servers/Routes/adminRoutes');
+const studentRoutes = require('./Servers/routes/studentRoutes');
 const User = require('./Servers/Model/User');
 
 
@@ -26,6 +27,7 @@ app.use('/assets', express.static(path.join(__dirname, 'Assets')));
 // Routes 
 app.use('/api/auth', authRoutes);
 app.use('/', adminRoutes);
+app.use('/',studentRoutes)
 
 app.get('/', (req, res) => {
  res.redirect('/home');
@@ -37,10 +39,10 @@ app.get('/home', (req, res) => {
 });
 
 // Student Routes 
-app.get('/studentLogin',(req, res) => {
-    res.sendFile(path.join(__dirname,'Views/html/student/loginPage.html'));});
-app.post('/submitStudentLogin',(req,res) => {
-    res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword); console.log(req.body);});
+//app.get('/studentLogin',(req, res) => {
+    //res.sendFile(path.join(__dirname,'Views/html/student/loginPage.html'));});
+//app.post('/submitStudentLogin',(req,res) => {
+    //res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword); console.log(req.body);});
 
 //app.get('/adminDashboard', (req, res) => {
 //    res.sendFile(path.join(__dirname, 'Views/html/admin/adminDashboard.html'));

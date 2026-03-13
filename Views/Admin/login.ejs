@@ -1,21 +1,23 @@
 <%- include("../Includes/_header") %>
 
-<div class="loginDiv">
-    <h2>Admin Login</h2>
+<div class="loginWrapper">
+    <div class="loginCard">
+        <h2>Admin Login</h2>
 
-    <% if (error) { %>
-        <div class="alert"><strong>Error:</strong> <%= error %></div>
-    <% } %>
+        <% if (error) { %>
+            <div class="alert"><strong>Error:</strong> <%= error %></div>
+        <% } %>
 
-    <form action="/submitAdminLogin" method="POST">
-        <label>Email</label>
-        <input type="email" name="adminEmail" required placeholder="admin@ilstu.edu" />
+        <form class="loginForm" action="/submitAdminLogin" method="POST">
+            <label>Email</label>
+            <input type="email" name="adminEmail" required placeholder="admin@ilstu.edu" />
 
-        <label>Password</label>
-        <input type="password" name="adminPassword" required placeholder="Password" />
+            <label>Password</label>
+            <input type="password" name="adminPassword" required placeholder="Password" />
 
-        <button class="btn" type="submit">Login</button>
-    </form>
+            <button class="btnLogin" type="submit">Login</button>
+        </form>
+    </div>
 </div>
 
 <%- include("../Includes/_footer") %>

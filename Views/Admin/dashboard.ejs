@@ -15,9 +15,11 @@
         <div id="appointments" class="tabContent activeTab">
             <h2>View & Cancel Appointments</h2>
             <% if (appointments.length === 0) { %>
-                <p>No appointments found.</p>
+                <div class="emptyState">
+                    No appointments found in the system yet.
+                </div>
             <% } else { %>
-                <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+                <table class="apptTable">
                     <thead>
                         <tr>
                             <th>Student</th>
@@ -37,11 +39,15 @@
                             <td><%= appt.course %></td>
                             <td><%= new Date(appt.start).toLocaleString() %></td>
                             <td><%= new Date(appt.end).toLocaleString() %></td>
-                            <td><%= appt.status %></td>
+                            <td>
+                                <span class="badge badge-<%= appt.status %>">
+                                    <%= appt.status %>
+                                </span>
+                            </td>
                             <td>
                                 <% if (appt.status === 'booked') { %>
                                 <form action="/cancelAppointment/<%= appt._id %>" method="POST">
-                                    <button type="submit">Cancel</button>
+                                    <button type="submit" class="btnCancel">Cancel</button>
                                 </form>
                                 <% } else { %>
                                     —
@@ -54,15 +60,66 @@
             <% } %>
         </div>
 
-
         <div id="hours" class="tabContent">
             <h2>Tutoring Hours & Availability</h2>
-            <p>Hours form will go here</p>
+            <div class="emptyState">Hours management coming soon.</div>
         </div>
 
         <div id="users" class="tabContent">
             <h2>Manage Tutors & Students</h2>
-            <p>Users table will go here</p>
+            
+            <div class="addUserForm">
+                <h3>Add New User</h3>
+                <form action="/addUser" method="POST" class="userForm">
+                    <input type="text" name="name" placeholder="Full Name" required />
+                    <input type="email" name="email" placeholder="Email" required />
+                    <input type="password" name="password" placeholder="Password" required />
+                    <select name="role" required>
+                        <option value="">Select Role</option>
+                        <option value="student">Student</option>
+                        <option value="tutor">Tutor</option>
+                    </select>
+                    <button type="submit" class="btnAdd">Add User</button>
+                </form>
+            </div>
+
+            <!-- Users Table -->
+            <% if (users.length === 0) { %>
+                <div class="emptyState">No tutors or students found.</div>
+            <% } else { %>
+                <table class="apptTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% users.forEach(function(user) { %>
+                        <tr>
+                            <td><%= user.name %></td>
+                            <td><%= user.email %></td>
+                            <td><%= user.role %></td>
+                            <td>
+                                <span class="badge <%= user.active ? 'badge-booked' : 'badge-cancelled' %>">
+                                    <%= user.active ? 'Active' : 'Inactive' %>
+                                </span>
+                            </td>
+                            <td>
+                                <form action="/toggleUserActive/<%= user._id %>" method="POST">
+                                    <button type="submit" class="<%= user.active ? 'btnCancel' : 'btnActivate' %>">
+                                        <%= user.active ? 'Deactivate' : 'Activate' %>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
         </div>
 
     </div>

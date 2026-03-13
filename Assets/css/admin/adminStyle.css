@@ -1,7 +1,19 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    background-color: #f5f5f5;
+}
+
 .staticHeader {
-    background-color: #ce1126;
+    background-color: #CE1126;
     color: white;
-    padding: 15px 30px;
+    padding: 16px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -9,13 +21,15 @@
 
 .staticHeader h1 {
     margin: 0;
-    font-size: 22px;
+    font-size: 26px;
+    font-weight: bold;
 }
 
 .staticNavBar a {
     color: white;
     text-decoration: none;
-    margin-left: 15px;
+    margin-left: 20px;
+    font-size: 15px;
 }
 
 .staticNavBar a:hover {
@@ -23,27 +37,73 @@
 }
 
 .staticFooter {
-    background-color: #2c3e50;
+    background-color: #000000;
     color: white;
     text-align: center;
-    padding: 15px;
+    padding: 16px;
     font-size: 14px;
+    margin-top: auto;
 }
 
+/* Dashboard Layout */
 .dashboardLayout {
     display: flex;
-    min-height: 80vh;
+    min-height: calc(100vh - 120px);
 }
 
 .sidebar {
-    width: 200px;
-    background-color: #f4f4f4;
-    padding: 20px;
+    width: 220px;
+    background-color: #1a1a1a;
+    padding: 30px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar h2 {
+    color: #CE1126;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #CE1126;
+}
+
+.sidebar button {
+    background-color: #2a2a2a;
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    text-align: left;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.sidebar button:hover {
+    background-color: #CE1126;
+}
+
+.sidebar a {
+    color: #aaaaaa;
+    text-decoration: none;
+    padding: 12px 16px;
+    font-size: 15px;
+    border-radius: 6px;
+    margin-top: auto;
+}
+
+.sidebar a:hover {
+    color: white;
+    background-color: #CE1126;
 }
 
 .mainContent {
-    padding: 20px;
     flex: 1;
+    padding: 30px 40px;
+    background-color: #f5f5f5;
 }
 
 .tabContent {
@@ -52,4 +112,238 @@
 
 .activeTab {
     display: block;
+}
+
+/* Tab headings */
+.mainContent h2 {
+    font-size: 24px;
+    color: #000000;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #CE1126;
+}
+
+/* Appointments Table */
+.apptTable {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.apptTable thead {
+    background-color: #CE1126;
+    color: white;
+}
+
+.apptTable thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.apptTable tbody tr {
+    border-bottom: 1px solid #eee;
+}
+
+.apptTable tbody tr:last-child {
+    border-bottom: none;
+}
+
+.apptTable tbody tr:hover {
+    background-color: #fdf0f1;
+}
+
+.apptTable tbody td {
+    padding: 14px 16px;
+    font-size: 15px;
+    color: #333;
+}
+
+/* Status badges */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.badge-booked { background-color: #d4edda; color: #155724; }
+.badge-cancelled { background-color: #f8d7da; color: #721c24; }
+.badge-completed { background-color: #cce5ff; color: #004085; }
+.badge-noshow { background-color: #fff3cd; color: #856404; }
+
+/* Cancel button */
+.btnCancel {
+    background-color: #CE1126;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btnCancel:hover {
+    background-color: #a50e1f;
+}
+
+/* Empty state */
+.emptyState {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+    font-size: 17px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Login page */
+.loginWrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px);
+    padding: 30px;
+}
+
+.loginCard {
+    background-color: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 420px;
+    border-top: 4px solid #CE1126;
+}
+
+.loginCard h2 {
+    font-size: 24px;
+    color: #000000;
+    margin-bottom: 24px;
+}
+
+.loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.loginForm label {
+    font-weight: bold;
+    color: #000000;
+    font-size: 15px;
+}
+
+.loginForm input {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-size: 15px;
+    width: 100%;
+}
+
+.loginForm input:focus {
+    outline: none;
+    border-color: #CE1126;
+}
+
+.btnLogin {
+    background-color: #CE1126;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 6px;
+}
+
+.btnLogin:hover {
+    background-color: #a50e1f;
+}
+
+.alert {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+/* Add user form */
+.addUserForm {
+    background-color: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+.addUserForm h3 {
+    font-size: 18px;
+    color: #000;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #CE1126;
+}
+
+.userForm {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.userForm input,
+.userForm select {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 14px;
+    flex: 1;
+    min-width: 160px;
+}
+
+.userForm input:focus,
+.userForm select:focus {
+    outline: none;
+    border-color: #CE1126;
+}
+
+.btnAdd {
+    background-color: #000000;
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btnAdd:hover {
+    background-color: #333;
+}
+
+.btnActivate {
+    background-color: #155724;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btnActivate:hover {
+    background-color: #0f3d18;
 }

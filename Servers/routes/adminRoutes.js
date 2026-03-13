@@ -6,5 +6,7 @@ router.get('/adminLogin', adminController.showLogin);
 router.post('/submitAdminLogin', adminController.submitLogin);
 router.get('/adminDashboard', adminController.showDashboard);
 router.post('/cancelAppointment/:id', adminController.cancelAppointment);
+router.post('/addUser', adminController.addUser);
+router.post('/toggleUserActive/:id', adminController.toggleUserActive);
 
 module.exports = router;

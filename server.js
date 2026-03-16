@@ -35,7 +35,8 @@ app.get('/', (req, res) => {
 
 // Home
 app.get('/home', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Views/html/home/home.html'));
+    //res.sendFile(path.join(__dirname, 'Views/html/home/home.html'));
+    res.render('../Views/Home/home');
 });
 
 // Student Routes 

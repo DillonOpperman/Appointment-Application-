@@ -34,7 +34,7 @@ const appointmentSchema = new mongoose.Schema(
         course: {
             type: String,
             required: true,
-            default: 'IT 179',
+            default: 'IT 330',
             trim: true
         },
         start: {

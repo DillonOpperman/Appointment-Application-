@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tutor Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #e92121, #ffffff);
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Merriweather', serif;
+        }
+
+        .page-header {
+            background-color: white;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .page-header img {
+            height: 50px;
+        }
+
+        .dashboard-wrapper {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+            width: min(1200px, 95%);
+            margin: 20px auto;
+            flex: 1;
+        }
+
+        .sidebar {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .sidebar a {
+            display: block;
+            text-decoration: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #7d1c1c;
+            font-weight: 600;
+            background: #f5f5f5;
+        }
+
+        .sidebar a.active {
+            background: #e92121;
+            color: white;
+        }
+
+        .panel {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 22px;
+        }
+
+        .badge-booked {
+            background: #007bff;
+        }
+
+        .badge-cancelled {
+            background: #6c757d;
+        }
+
+        .badge-completed {
+            background: #28a745;
+        }
+
+        .badge-noshow {
+            background: #dc3545;
+        }
+
+        .footer {
+            background-color: #e92121;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<%
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+%>
+
+<header class="page-header">
+    <div>
+        <h2 style="color: #e92121; margin-bottom: 0;">Tutor Portal</h2>
+        <small class="text-muted">Signed in as <%= tutor.name %> (<%= tutor.email %>)</small>
+    </div>
+    <a href="/home">
+        <img src="/assets/images/isu.png" alt="ISU Logo">
+    </a>
+</header>
+
+<div class="dashboard-wrapper">
+    <aside class="sidebar">
+        <h4 style="color: #e92121;">Tutor Panel</h4>
+        <a class="<%= activeTab === 'appointments' ? 'active' : '' %>" href="/tutorDashboard?tab=appointments">My Appointments</a>
+        <a class="<%= activeTab === 'hours' ? 'active' : '' %>" href="/tutorDashboard?tab=hours">Manage Hours</a>
+        <a href="/logout">Logout</a>
+    </aside>
+
+    <main class="panel">
+        <% if (activeTab === 'appointments') { %>
+            <h3>My Appointments</h3>
+            <% if (!appointments.length) { %>
+                <div class="alert alert-light border mt-3">No appointments assigned yet.</div>
+            <% } else { %>
+                <div class="table-responsive mt-3">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <% appointments.forEach(function(appt) { %>
+                            <tr>
+                                <td><%= appt.student ? appt.student.name : 'N/A' %></td>
+                                <td><%= appt.course %></td>
+                                <td><%= new Date(appt.start).toLocaleString() %></td>
+                                <td><%= new Date(appt.end).toLocaleString() %></td>
+                                <td>
+                                    <span class="badge badge-<%= appt.status %>"><%= appt.status %></span>
+                                </td>
+                                <td>
+                                    <% if (appt.status === 'booked') { %>
+                                        <form action="/tutor/cancelAppointment/<%= appt._id %>" method="POST">
+                                            <button class="btn btn-sm btn-danger" type="submit">Cancel</button>
+                                        </form>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% } %>
+
+        <% if (activeTab === 'hours') { %>
+            <h3>Manage Availability</h3>
+            <p class="text-muted">Create weekly or date-specific availability blocks.</p>
+
+            <form class="row g-3 mt-1" action="/tutor/availability" method="POST">
+                <div class="col-md-4">
+                    <label class="form-label">Course</label>
+                    <input class="form-control" type="text" name="course" value="IT 330">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Block Type</label>
+                    <select class="form-select" name="blockType">
+                        <option value="weekly">Weekly</option>
+                        <option value="date">Date Specific</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Day of Week (Weekly)</label>
+                    <select class="form-select" name="dayOfWeek">
+                        <option value="">Select day</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Date (Date Specific)</label>
+                    <input class="form-control" type="date" name="date">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Start Time</label>
+                    <input class="form-control" type="time" name="startTime" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">End Time</label>
+                    <input class="form-control" type="time" name="endTime" required>
+                </div>
+
+                <div class="col-12 form-check ms-2">
+                    <input class="form-check-input" type="checkbox" name="isBlackoutDate" id="isBlackoutDate">
+                    <label class="form-check-label" for="isBlackoutDate">Mark as blackout date</label>
+                </div>
+
+                <div class="col-12">
+                    <button class="btn btn-danger" type="submit">Add Availability Block</button>
+                </div>
+            </form>
+
+            <hr>
+            <h4 class="mt-3">Current Availability</h4>
+
+            <% if (!availabilityBlocks.length) { %>
+                <div class="alert alert-light border mt-2">No availability blocks yet.</div>
+            <% } else { %>
+                <div class="table-responsive mt-2">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Course</th>
+                                <th>Day / Date</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Blackout</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% availabilityBlocks.forEach(function(block) { %>
+                                <tr>
+                                    <td><%= block.isException ? 'Date Specific' : 'Weekly' %></td>
+                                    <td><%= block.course || 'IT 330' %></td>
+                                    <td>
+                                        <% if (block.isException && block.date) { %>
+                                            <%= new Date(block.date).toLocaleDateString() %>
+                                        <% } else { %>
+                                            <%= dayNames[block.dayOfWeek] || 'N/A' %>
+                                        <% } %>
+                                    </td>
+                                    <td><%= block.startTime %></td>
+                                    <td><%= block.endTime %></td>
+                                    <td><%= block.isBlackoutDate ? 'Yes' : 'No' %></td>
+                                    <td>
+                                        <form action="/tutor/availability/delete/<%= block._id %>" method="POST">
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% } %>
+    </main>
+</div>
+
+<footer class="footer">
+    <p>&copy; 2026 Illinois State University | Appointment System</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

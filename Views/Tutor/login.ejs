@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Login</title>
+    <title>Tutor Login</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
@@ -70,7 +70,7 @@
 <body>
 
 <header class="page-header">
-    <h2 style="color: #e92121;">Admin Portal</h2>
+    <h2 style="color: #e92121;">Tutor Portal</h2>
     <a href="/home">
         <img src="/assets/images/isu.png" alt="ISU Logo">
     </a>
@@ -78,20 +78,21 @@
 
 <div class="container d-flex justify-content-center align-items-center flex-grow-1">
     <div class="login-card col-12 col-md-6 col-lg-4">
-        <h1 class="mb-4 text-center" style="color: #e92121;">Login</h1>
+        <h1 class="mb-2 text-center" style="color: #e92121;">Login</h1>
+        <p class="text-center text-muted mb-4">Sign in to manage appointments and availability.</p>
 
         <% if (error) { %>
             <div class="alert alert-danger"><strong>Error:</strong> <%= error %></div>
         <% } %>
 
-        <form action="/submitAdminLogin" method="POST">
+        <form action="/submitTutorLogin" method="POST">
             <div class="mb-3">
-                <label for="adminEmail" class="form-label">Email</label>
-                <input type="email" class="form-control" id="adminEmail" name="adminEmail" required placeholder="admin@ilstu.edu">
+                <label for="tutorEmail" class="form-label">Email</label>
+                <input id="tutorEmail" class="form-control" type="text" name="tutorEmail" required>
             </div>
             <div class="mb-3">
-                <label for="adminPassword" class="form-label">Password</label>
-                <input type="password" class="form-control" id="adminPassword" name="adminPassword" required placeholder="Password">
+                <label for="tutorPassword" class="form-label">Password</label>
+                <input id="tutorPassword" class="form-control" type="password" name="tutorPassword" required>
             </div>
             <button class="btn btn-red w-100" type="submit">Login</button>
         </form>

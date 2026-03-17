@@ -1,5 +1,15 @@
 <%- include("../Includes/_header") %>
 
+<%
+    const selectedTab = (typeof activeTab !== 'undefined' && ['appointments', 'hours', 'users'].includes(activeTab))
+        ? activeTab
+        : 'appointments';
+    const safeAppointments = Array.isArray(appointments) ? appointments : [];
+    const safeTutors = Array.isArray(tutors) ? tutors : [];
+    const safeAvailabilityBlocks = Array.isArray(availabilityBlocks) ? availabilityBlocks : [];
+    const safeUsers = Array.isArray(users) ? users : [];
+%>
+
 <div class="dashboardLayout">
 
     <div class="sidebar">
@@ -12,9 +22,9 @@
 
     <div class="mainContent">
 
-        <div id="appointments" class="tabContent activeTab">
+        <div id="appointments" class="tabContent <%= selectedTab === 'appointments' ? 'activeTab' : '' %>">
             <h2>View & Cancel Appointments</h2>
-            <% if (appointments.length === 0) { %>
+            <% if (safeAppointments.length === 0) { %>
                 <div class="emptyState">
                     No appointments found in the system yet.
                 </div>
@@ -32,7 +42,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% appointments.forEach(function(appt) { %>
+                        <% safeAppointments.forEach(function(appt) { %>
                         <tr>
                             <td><%= appt.student ? appt.student.name : 'N/A' %></td>
                             <td><%= appt.tutor ? appt.tutor.name : 'N/A' %></td>
@@ -60,12 +70,95 @@
             <% } %>
         </div>
 
-        <div id="hours" class="tabContent">
+        <div id="hours" class="tabContent <%= selectedTab === 'hours' ? 'activeTab' : '' %>">
             <h2>Tutoring Hours & Availability</h2>
-            <div class="emptyState">Hours management coming soon.</div>
+
+            <div class="addUserForm">
+                <h3>Add Availability Block</h3>
+                <form id="adminAvailabilityForm" action="/admin/availability" method="POST" class="userForm">
+                    <select name="tutorId" required>
+                        <option value="">Select Tutor</option>
+                        <% safeTutors.forEach(function(tutor) { %>
+                            <option value="<%= tutor._id %>"><%= tutor.name %> (<%= tutor.email %>)</option>
+                        <% }); %>
+                    </select>
+
+                    <input type="text" name="course" placeholder="Course" value="IT 330" />
+
+                    <select id="adminBlockType" name="blockType" required>
+                        <option value="weekly">Weekly</option>
+                        <option value="date">Date Specific</option>
+                    </select>
+
+                    <select id="adminDayOfWeek" name="dayOfWeek">
+                        <option value="">Day of Week (Weekly)</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+
+                    <input id="adminDate" type="date" name="date" />
+                    <input type="time" name="startTime" required />
+                    <input type="time" name="endTime" required />
+
+                    <label style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" name="isBlackoutDate" />
+                        Blackout Date
+                    </label>
+
+                    <button type="submit" class="btnAdd">Add Block</button>
+                </form>
+            </div>
+
+            <% if (safeAvailabilityBlocks.length === 0) { %>
+                <div class="emptyState">No availability blocks found.</div>
+            <% } else { %>
+                <table class="apptTable">
+                    <thead>
+                        <tr>
+                            <th>Tutor</th>
+                            <th>Type</th>
+                            <th>Course</th>
+                            <th>Day / Date</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Blackout</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% safeAvailabilityBlocks.forEach(function(block) { %>
+                            <tr>
+                                <td><%= block.tutor ? block.tutor.name : 'N/A' %></td>
+                                <td><%= block.isException ? 'Date Specific' : 'Weekly' %></td>
+                                <td><%= block.course || 'IT 330' %></td>
+                                <td>
+                                    <% if (block.isException && block.date) { %>
+                                        <%= new Date(block.date).toLocaleDateString() %>
+                                    <% } else { %>
+                                        <%= ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][block.dayOfWeek] || 'N/A' %>
+                                    <% } %>
+                                </td>
+                                <td><%= block.startTime %></td>
+                                <td><%= block.endTime %></td>
+                                <td><%= block.isBlackoutDate ? 'Yes' : 'No' %></td>
+                                <td>
+                                    <form action="/admin/availability/delete/<%= block._id %>" method="POST">
+                                        <button type="submit" class="btnCancel">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
         </div>
 
-        <div id="users" class="tabContent">
+        <div id="users" class="tabContent <%= selectedTab === 'users' ? 'activeTab' : '' %>">
             <h2>Manage Tutors & Students</h2>
             
             <div class="addUserForm">
@@ -84,7 +177,7 @@
             </div>
 
             <!-- Users Table -->
-            <% if (users.length === 0) { %>
+            <% if (safeUsers.length === 0) { %>
                 <div class="emptyState">No tutors or students found.</div>
             <% } else { %>
                 <table class="apptTable">
@@ -98,7 +191,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% users.forEach(function(user) { %>
+                        <% safeUsers.forEach(function(user) { %>
                         <tr>
                             <td><%= user.name %></td>
                             <td><%= user.email %></td>
@@ -132,6 +225,32 @@
             contents[i].classList.remove("activeTab");
         }
         document.getElementById(tabId).classList.add("activeTab");
+    }
+
+    function syncAdminAvailabilityFields() {
+        var blockType = document.getElementById('adminBlockType');
+        var dayOfWeek = document.getElementById('adminDayOfWeek');
+        var dateInput = document.getElementById('adminDate');
+
+        if (!blockType || !dayOfWeek || !dateInput) {
+            return;
+        }
+
+        if (blockType.value === 'date') {
+            dateInput.required = true;
+            dayOfWeek.required = false;
+        } else {
+            dayOfWeek.required = true;
+            dateInput.required = false;
+        }
+    }
+
+    openTab('<%= selectedTab %>');
+    syncAdminAvailabilityFields();
+
+    var blockTypeElement = document.getElementById('adminBlockType');
+    if (blockTypeElement) {
+        blockTypeElement.addEventListener('change', syncAdminAvailabilityFields);
     }
 </script>
 

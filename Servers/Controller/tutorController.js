@@ -1,5 +1,4 @@
 const Appointment = require('../Model/Appointment');
-const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const AuditLog = require('../Model/AuditLog');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
@@ -55,16 +54,9 @@ exports.showDashboard = async (req, res) => {
             .populate('student', 'name email')
             .sort({ start: -1 });
 
-        const availabilityBlocks = await AvailabilityBlock.find({ tutor: tutor._id })
-            .sort({ date: 1, dayOfWeek: 1, startTime: 1 });
-
-        const activeTab = req.query.tab === 'hours' ? 'hours' : 'appointments';
-
         return res.render('Tutor/dashboard', {
             tutor,
-            appointments,
-            availabilityBlocks,
-            activeTab
+            appointments
         });
     } catch (error) {
         console.error(error);
@@ -101,69 +93,9 @@ exports.cancelAppointment = async (req, res) => {
             metadata: { cancelledBy: 'tutor' }
         });
 
-        return res.redirect('/tutorDashboard?tab=appointments');
+        return res.redirect('/tutorDashboard');
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error cancelling appointment.');
-    }
-};
-
-exports.addAvailability = async (req, res) => {
-    try {
-        const tutor = await resolveTutorFromRequest(req);
-        if (!tutor) {
-            return res.status(404).send('Tutor not found.');
-        }
-
-        const { course, blockType, dayOfWeek, date, startTime, endTime, isBlackoutDate } = req.body;
-
-        if (!startTime || !endTime) {
-            return res.status(400).send('Start and end time are required.');
-        }
-
-        const blockPayload = {
-            tutor: tutor._id,
-            createdBy: tutor._id,
-            course: course || 'IT 330',
-            startTime,
-            endTime,
-            isException: blockType === 'date',
-            isBlackoutDate: isBlackoutDate === 'on'
-        };
-
-        if (blockType === 'date') {
-            if (!date) {
-                return res.status(400).send('Date is required for date-specific blocks.');
-            }
-            blockPayload.date = new Date(date);
-        } else {
-            if (dayOfWeek === undefined || dayOfWeek === '') {
-                return res.status(400).send('Day of week is required for weekly blocks.');
-            }
-            blockPayload.dayOfWeek = Number(dayOfWeek);
-        }
-
-        await AvailabilityBlock.create(blockPayload);
-
-        return res.redirect('/tutorDashboard?tab=hours');
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error saving availability block.');
-    }
-};
-
-exports.deleteAvailability = async (req, res) => {
-    try {
-        const tutor = await resolveTutorFromRequest(req);
-        if (!tutor) {
-            return res.status(404).send('Tutor not found.');
-        }
-
-        await AvailabilityBlock.findOneAndDelete({ _id: req.params.id, tutor: tutor._id });
-
-        return res.redirect('/tutorDashboard?tab=hours');
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error deleting availability block.');
     }
 };

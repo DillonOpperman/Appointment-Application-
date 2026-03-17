@@ -66,19 +66,49 @@ exports.showDashboard = async (req, res) => {
     }
  };
 
+exports.editAppointment = async (req, res) => {
+    try {
+        const { start, end } = req.body;
+        if (!start || !end) return res.status(400).send('Start and end are required.');
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        if (isNaN(startDate) || isNaN(endDate)) return res.status(400).send('Invalid date/time values.');
+        if (endDate <= startDate) return res.status(400).send('End time must be after start time.');
+
+        await Appointment.findByIdAndUpdate(req.params.id, { start: startDate, end: endDate });
+
+        await AuditLog.create({
+            actor: req.user.id,
+            action: 'edit',
+            targetType: 'Appointment',
+            targetId: req.params.id,
+            metadata: { editedBy: 'admin', newStart: startDate, newEnd: endDate }
+        });
+
+        res.redirect('/adminDashboard');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error editing appointment');
+    }
+};
+
  exports.cancelAppointment = async (req, res) => {
     try {
         const appointment = await Appointment.findByIdAndUpdate(
             req.params.id,
             { status: 'cancelled' },
             { new: true }
-        );
+        ).populate('student', 'email').populate('tutor', 'email');
         await AuditLog.create({
             actor: req.user.id,
             action: 'cancel',
             targetType: 'Appointment',
             targetId: appointment._id,
-            metadata: { cancelledBy: 'admin' }
+            metadata: {
+                cancelledBy: 'admin',
+                studentEmail: appointment.student ? appointment.student.email : null,
+                tutorEmail: appointment.tutor ? appointment.tutor.email : null
+            }
         });
         res.redirect('/adminDashboard');
     } catch (err) {

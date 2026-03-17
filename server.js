@@ -1,3 +1,6 @@
+// Developed by Dillon Opperman
+// Special thanks to Stefan for his contributions to this project
+
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -33,12 +36,6 @@ app.use('/', tutorRoutes);
 
 app.get('/', (req, res) => {
  res.redirect('/home');
-});
-
-// Home
-app.get('/home', (req, res) => {
-    //res.sendFile(path.join(__dirname, 'Views/html/home/home.html'));
-    res.render('../Views/Home/home');
 });
 
 // Student Routes 

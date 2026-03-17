@@ -55,6 +55,47 @@
             flex-grow: 1;
         }
 
+        .appointments-section {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            margin-bottom: 24px;
+        }
+
+        .appointments-section h2 {
+            color: #7d1c1c;
+        }
+
+        .slot-table td,
+        .slot-table th {
+            vertical-align: middle;
+        }
+
+        .book-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            min-width: 280px;
+        }
+
+        .book-form .full {
+            grid-column: 1 / -1;
+        }
+
+        .btn-book {
+            background-color: #e92121;
+            border-color: #e92121;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-book:hover {
+            background-color: #8c1f1f;
+            border-color: #8c1f1f;
+            color: #fff;
+        }
+
         .carousel-item img {
             border-radius: 10px;
             max-height: 500px;
@@ -69,6 +110,13 @@
             text-align: center;
             padding: 15px 0;
             margin-top: auto;
+        }
+
+        @media (max-width: 992px) {
+            .book-form {
+                grid-template-columns: 1fr;
+                min-width: 220px;
+            }
         }
     </style>
 </head>
@@ -114,6 +162,60 @@
             <span class="visually-hidden">Next</span>
         </button>
     </div>
+</div>
+
+<div id="appointments" class="container mb-4">
+    <section class="appointments-section">
+        <h2 class="mb-2">Available Appointments</h2>
+        <p class="text-muted mb-3">Scroll, pick a tutor slot, and book directly from home.</p>
+
+        <% if (notice) { %>
+            <div class="alert <%= noticeType === 'success' ? 'alert-success' : 'alert-danger' %>" role="alert">
+                <%= notice %>
+            </div>
+        <% } %>
+
+        <% if (!availableSlots || !availableSlots.length) { %>
+            <div class="alert alert-light border">No upcoming appointment slots are currently available.</div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-striped slot-table">
+                    <thead>
+                        <tr>
+                            <th>Tutor</th>
+                            <th>Course</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Schedule</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% availableSlots.forEach(function(slot) { %>
+                            <tr>
+                                <td>
+                                    <strong><%= slot.tutorName %></strong><br>
+                                    <small class="text-muted"><%= slot.tutorEmail %></small>
+                                </td>
+                                <td><%= slot.course %></td>
+                                <td><%= new Date(slot.start).toLocaleString() %></td>
+                                <td><%= new Date(slot.end).toLocaleString() %></td>
+                                <td>
+                                    <form class="book-form" action="/studentLogin" method="GET">
+                                        <input type="hidden" name="tutorId" value="<%= slot.tutorId %>">
+                                        <input type="hidden" name="tutorName" value="<%= slot.tutorName %>">
+                                        <input type="hidden" name="course" value="<%= slot.course %>">
+                                        <input type="hidden" name="start" value="<%= slot.startIso %>">
+                                        <input type="hidden" name="end" value="<%= slot.endIso %>">
+                                        <button class="btn btn-sm btn-book full" type="submit">Book</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </section>
 </div>
 
 

@@ -91,6 +91,20 @@
 <div class="container d-flex justify-content-center align-items-center flex-grow-1">
     <div class="login-card col-12 col-md-6 col-lg-4">
         <h1 class="mb-4 text-center" style="color: #e92121;">Login</h1>
+        <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+
+        <% if (hasPendingBooking) { %>
+            <div class="alert alert-light border">
+                <strong>Booking Slot:</strong><br>
+                Tutor: <%= pendingBooking.tutorName || 'Selected Tutor' %><br>
+                Course: <%= pendingBooking.course %><br>
+                Start: <%= new Date(pendingBooking.start).toLocaleString() %><br>
+                End: <%= new Date(pendingBooking.end).toLocaleString() %>
+            </div>
+        <% } %>
+
         <form action='/submitStudentLogin' method="POST">
             <div class="mb-3">
                 <label for="studentEmail" class="form-label">Email</label>
@@ -100,6 +114,13 @@
                 <label for="studentPassword" class="form-label">Password</label>
                 <input type="password" class="form-control" id="studentPassword" name="studentPassword" required>
             </div>
+            <% if (hasPendingBooking) { %>
+                <input type="hidden" name="tutorId" value="<%= pendingBooking.tutorId %>">
+                <input type="hidden" name="tutorName" value="<%= pendingBooking.tutorName %>">
+                <input type="hidden" name="course" value="<%= pendingBooking.course %>">
+                <input type="hidden" name="start" value="<%= pendingBooking.start %>">
+                <input type="hidden" name="end" value="<%= pendingBooking.end %>">
+            <% } %>
             <button type="submit" class="btn btn-red w-100">Login</button>
         </form>
     </div>

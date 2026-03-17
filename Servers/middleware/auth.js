@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../Model/User');
 
 function parseCookieHeader(cookieHeader = '') {
     const cookies = {};
@@ -53,11 +54,34 @@ function authenticatePageJWT(req, res, next) {
 }
 
 function authorizeRoles(...allowedRoles) {
-    return (req, res, next) => {
-        if (!req.user || !allowedRoles.includes(req.user.role)) {
+    const normalizedAllowedRoles = allowedRoles.map((role) => String(role).toLowerCase());
+
+    return async (req, res, next) => {
+        if (!req.user || !req.user.id) {
             return res.status(403).send('Forbidden');
         }
-        return next();
+
+        const tokenRole = String(req.user.role || '').toLowerCase();
+        if (normalizedAllowedRoles.includes(tokenRole)) {
+            return next();
+        }
+
+        try {
+            const currentUser = await User.findById(req.user.id).select('role active');
+            if (!currentUser || !currentUser.active) {
+                return res.status(403).send('Forbidden');
+            }
+
+            const dbRole = String(currentUser.role || '').toLowerCase();
+            if (!normalizedAllowedRoles.includes(dbRole)) {
+                return res.status(403).send('Forbidden');
+            }
+
+            req.user.role = dbRole;
+            return next();
+        } catch (error) {
+            return res.status(403).send('Forbidden');
+        }
     };
 }
 

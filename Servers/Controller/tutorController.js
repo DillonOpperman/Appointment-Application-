@@ -20,9 +20,13 @@ exports.submitLogin = async (req, res) => {
         const email = (req.body.tutorEmail || '').toLowerCase().trim();
         const password = req.body.tutorPassword || '';
 
-        const tutor = await User.findOne({ email, role: 'tutor', active: true });
+        const tutor = await User.findOne({ email, role: 'tutor' });
         if (!tutor) {
             return res.status(401).render('Tutor/login', { error: 'Invalid tutor credentials.' });
+        }
+
+        if (!tutor.active) {
+            return res.status(403).render('Tutor/login', { error: 'Reach out to Admin. Tutor permissions denied.' });
         }
 
         const isMatch = await bcrypt.compare(password, tutor.passwordHash);

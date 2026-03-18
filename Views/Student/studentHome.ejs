@@ -4,11 +4,12 @@
 
 </head>
 <body>
-    <p>Submitted student email: <%= studentEmail %> Submitted student pass: <%= studentPassword %></p>
+   
     <p>Add an Appointment:</p>
     <form action="/studentCreateAppointment" method="POST">
         <p>Tutor: <input type="text" name="tutor" required></p>
         <p>Course: <input type="text" name="course" required> Example format: "IT 179"</p>
+        <p>Start Time: <input type="datetime-local" name="scheduledStart"> </p>
         <button type="submit">Make Appointment</button>
     </form>
 </body>

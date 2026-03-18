@@ -2,6 +2,7 @@ const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
+const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
 
 function combineDateAndTime(dateObj, timeString) {
     const [hours, minutes] = (timeString || '00:00').split(':').map(Number);
@@ -81,7 +82,7 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
         return { errorCode: 'slot_taken' };
     }
 
-    await Appointment.create({
+    const appointment = await Appointment.create({
         student: student._id,
         tutor: tutor._id,
         course: (course || 'IT 330').trim() || 'IT 330',
@@ -89,7 +90,17 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
         end: endDate,
         status: 'booked'
     });
-
+    
+    const tutorUser = await User.findById(tutor._id).select('name');
+    sendBookingConfirmation({
+        studentEmail: student.email,
+        studentName: student.name,
+        tutorName: tutorUser ? tutorUser.name : 'Your Tutor',
+        course: appointment.course,
+        start: appointment.start,
+        end: appointment.end
+    }).catch(err => console.error('Booking email error:', err));
+    
     return { ok: true };
 }
 

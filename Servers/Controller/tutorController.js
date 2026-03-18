@@ -56,12 +56,16 @@ exports.showDashboard = async (req, res) => {
 
         const appointments = await Appointment.find({ tutor: tutor._id })
             .populate('student', 'name email')
+            .populate('comments.author', 'name')
             .sort({ start: -1 });
 
-        return res.render('Tutor/dashboard', {
-            tutor,
-            appointments
-        });
+            const notice = req.query.success
+            ? 'Session updated successfully.'
+            : req.query.error === 'not_found'
+                ? 'Appointment not found.'
+                : null;
+        
+        return res.render('Tutor/dashboard', { tutor, appointments, notice });
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error loading tutor dashboard.');
@@ -101,5 +105,54 @@ exports.cancelAppointment = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error cancelling appointment.');
+    }
+};
+
+exports.updateSession = async (req, res) => {
+    try {
+        const tutor = await resolveTutorFromRequest(req);
+        if (!tutor) return res.status(404).send('Tutor not found.');
+
+        const { commentText, attendance, actualStart, actualEnd } = req.body;
+
+        const appointment = await Appointment.findOne({
+            _id: req.params.id,
+            tutor: tutor._id
+        });
+
+        if (!appointment) {
+            return res.redirect('/tutorDashboard?error=not_found');
+        }
+
+        if (commentText && commentText.trim()) {
+            appointment.comments.push({
+                author: tutor._id,
+                commentText: commentText.trim()
+            });
+        }
+
+        if (attendance === 'noshow') {
+            appointment.status = 'noshow';
+        } else if (attendance === 'show') {
+            appointment.status = 'completed';
+        }
+
+        if (actualStart) appointment.actualStart = new Date(actualStart);
+        if (actualEnd) appointment.actualEnd = new Date(actualEnd);
+
+        await appointment.save();
+
+        await AuditLog.create({
+            actor: tutor._id,
+            action: 'updateSession',
+            targetType: 'Appointment',
+            targetId: appointment._id,
+            metadata: { attendance, hasComment: !!(commentText && commentText.trim()) }
+        });
+
+        return res.redirect('/tutorDashboard?success=1');
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error updating session.');
     }
 };

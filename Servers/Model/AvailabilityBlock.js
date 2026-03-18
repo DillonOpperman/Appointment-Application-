@@ -14,7 +14,7 @@ const availabilityBlockSchema = new mongoose.Schema(
         },
         course: {
             type: String,
-            default: 'IT 179',
+            default: 'IT 330',
             trim: true
         },
         dayOfWeek: {

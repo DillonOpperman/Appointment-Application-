@@ -1,5 +1,15 @@
 <%- include("../Includes/_header") %>
 
+<%
+    const selectedTab = (typeof activeTab !== 'undefined' && ['appointments', 'hours', 'users'].includes(activeTab))
+        ? activeTab
+        : 'appointments';
+    const safeAppointments = Array.isArray(appointments) ? appointments : [];
+    const safeTutors = Array.isArray(tutors) ? tutors : [];
+    const safeAvailabilityBlocks = Array.isArray(availabilityBlocks) ? availabilityBlocks : [];
+    const safeUsers = Array.isArray(users) ? users : [];
+%>
+
 <div class="dashboardLayout">
 
     <div class="sidebar">
@@ -7,14 +17,35 @@
         <button onclick="openTab('appointments')">Appointments</button>
         <button onclick="openTab('hours')">Manage Hours</button>
         <button onclick="openTab('users')">Manage Users</button>
-        <a href="/adminLogin">Logout</a>
+        <a href="/logout">Logout</a>
     </div>
 
     <div class="mainContent">
 
-        <div id="appointments" class="tabContent activeTab">
-            <h2>View & Cancel Appointments</h2>
-            <% if (appointments.length === 0) { %>
+        <div id="appointments" class="tabContent <%= selectedTab === 'appointments' ? 'activeTab' : '' %>">
+            <div class="apptFilterBar">
+                <h2>View & Cancel Appointments</h2>
+                <div class="apptFilters">
+                    <select id="filterDate" onchange="applyFilters()">
+                        <option value="">Date: All</option>
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                    <select id="filterStudent" onchange="applyFilters()">
+                        <option value="">Student: All</option>
+                        <option value="az">Student: A → Z</option>
+                        <option value="za">Student: Z → A</option>
+                    </select>
+                    <select id="filterCourse" onchange="applyFilters()">
+                        <option value="">Course: All</option>
+                        <% [...new Set(safeAppointments.map(a => a.course).filter(Boolean))].sort().forEach(function(c) { %>
+                            <option value="<%= c %>"><%= c %></option>
+                        <% }); %>
+                    </select>
+                    <button type="button" class="btnClearFilters" onclick="clearFilters()">Clear</button>
+                </div>
+            </div>
+            <% if (safeAppointments.length === 0) { %>
                 <div class="emptyState">
                     No appointments found in the system yet.
                 </div>
@@ -32,8 +63,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% appointments.forEach(function(appt) { %>
-                        <tr>
+                        <% safeAppointments.forEach(function(appt) { %>
+                        <tr
+                            data-start="<%= appt.start ? appt.start.getTime() : 0 %>"
+                            data-student="<%= (appt.student && appt.student.name) ? appt.student.name.toLowerCase() : '' %>"
+                            data-course="<%= appt.course || '' %>">
                             <td><%= appt.student ? appt.student.name : 'N/A' %></td>
                             <td><%= appt.tutor ? appt.tutor.name : 'N/A' %></td>
                             <td><%= appt.course %></td>
@@ -46,9 +80,16 @@
                             </td>
                             <td>
                                 <% if (appt.status === 'booked') { %>
-                                <form action="/cancelAppointment/<%= appt._id %>" method="POST">
-                                    <button type="submit" class="btnCancel">Cancel</button>
-                                </form>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                    <button type="button" class="btnEdit"
+                                        data-id="<%= appt._id %>"
+                                        data-start="<%= appt.start.toISOString() %>"
+                                        data-end="<%= appt.end.toISOString() %>"
+                                        onclick="openEditModal(this)">Edit</button>
+                                    <form action="/cancelAppointment/<%= appt._id %>" method="POST">
+                                        <button type="submit" class="btnCancel">Cancel</button>
+                                    </form>
+                                </div>
                                 <% } else { %>
                                     —
                                 <% } %>
@@ -60,12 +101,95 @@
             <% } %>
         </div>
 
-        <div id="hours" class="tabContent">
+        <div id="hours" class="tabContent <%= selectedTab === 'hours' ? 'activeTab' : '' %>">
             <h2>Tutoring Hours & Availability</h2>
-            <div class="emptyState">Hours management coming soon.</div>
+
+            <div class="addUserForm">
+                <h3>Add Availability Block</h3>
+                <form id="adminAvailabilityForm" action="/admin/availability" method="POST" class="userForm">
+                    <select name="tutorId" required>
+                        <option value="">Select Tutor</option>
+                        <% safeTutors.forEach(function(tutor) { %>
+                            <option value="<%= tutor._id %>"><%= tutor.name %> (<%= tutor.email %>)</option>
+                        <% }); %>
+                    </select>
+
+                    <input type="text" name="course" placeholder="Course" value="IT 330" />
+
+                    <select id="adminBlockType" name="blockType" required>
+                        <option value="weekly">Weekly</option>
+                        <option value="date">Date Specific</option>
+                    </select>
+
+                    <select id="adminDayOfWeek" name="dayOfWeek">
+                        <option value="">Day of Week (Weekly)</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+
+                    <input id="adminDate" type="date" name="date" />
+                    <input type="time" name="startTime" required />
+                    <input type="time" name="endTime" required />
+
+                    <label style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" name="isBlackoutDate" />
+                        Blackout Date
+                    </label>
+
+                    <button type="submit" class="btnAdd">Add Block</button>
+                </form>
+            </div>
+
+            <% if (safeAvailabilityBlocks.length === 0) { %>
+                <div class="emptyState">No availability blocks found.</div>
+            <% } else { %>
+                <table class="apptTable">
+                    <thead>
+                        <tr>
+                            <th>Tutor</th>
+                            <th>Type</th>
+                            <th>Course</th>
+                            <th>Day / Date</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Blackout</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% safeAvailabilityBlocks.forEach(function(block) { %>
+                            <tr>
+                                <td><%= block.tutor ? block.tutor.name : 'N/A' %></td>
+                                <td><%= block.isException ? 'Date Specific' : 'Weekly' %></td>
+                                <td><%= block.course || 'IT 330' %></td>
+                                <td>
+                                    <% if (block.isException && block.date) { %>
+                                        <%= new Date(block.date).toLocaleDateString() %>
+                                    <% } else { %>
+                                        <%= ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][block.dayOfWeek] || 'N/A' %>
+                                    <% } %>
+                                </td>
+                                <td><%= block.startTime %></td>
+                                <td><%= block.endTime %></td>
+                                <td><%= block.isBlackoutDate ? 'Yes' : 'No' %></td>
+                                <td>
+                                    <form action="/admin/availability/delete/<%= block._id %>" method="POST">
+                                        <button type="submit" class="btnCancel">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
         </div>
 
-        <div id="users" class="tabContent">
+        <div id="users" class="tabContent <%= selectedTab === 'users' ? 'activeTab' : '' %>">
             <h2>Manage Tutors & Students</h2>
             
             <div class="addUserForm">
@@ -84,7 +208,7 @@
             </div>
 
             <!-- Users Table -->
-            <% if (users.length === 0) { %>
+            <% if (safeUsers.length === 0) { %>
                 <div class="emptyState">No tutors or students found.</div>
             <% } else { %>
                 <table class="apptTable">
@@ -98,7 +222,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% users.forEach(function(user) { %>
+                        <% safeUsers.forEach(function(user) { %>
                         <tr>
                             <td><%= user.name %></td>
                             <td><%= user.email %></td>
@@ -133,6 +257,117 @@
         }
         document.getElementById(tabId).classList.add("activeTab");
     }
+
+    function syncAdminAvailabilityFields() {
+        var blockType = document.getElementById('adminBlockType');
+        var dayOfWeek = document.getElementById('adminDayOfWeek');
+        var dateInput = document.getElementById('adminDate');
+
+        if (!blockType || !dayOfWeek || !dateInput) {
+            return;
+        }
+
+        if (blockType.value === 'date') {
+            dateInput.required = true;
+            dayOfWeek.required = false;
+        } else {
+            dayOfWeek.required = true;
+            dateInput.required = false;
+        }
+    }
+
+    openTab('<%= selectedTab %>');
+    syncAdminAvailabilityFields();
+
+    var blockTypeElement = document.getElementById('adminBlockType');
+    if (blockTypeElement) {
+        blockTypeElement.addEventListener('change', syncAdminAvailabilityFields);
+    }
+
+    function toLocalInput(isoStr) {
+        var d = new Date(isoStr);
+        var pad = function(n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+               'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function applyFilters() {
+        var dateFilter = document.getElementById('filterDate').value;
+        var studentFilter = document.getElementById('filterStudent').value;
+        var courseFilter = document.getElementById('filterCourse').value;
+
+        var tbody = document.querySelector('#appointments .apptTable tbody');
+        if (!tbody) return;
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+
+        // Course filter — hide/show
+        rows.forEach(function(row) {
+            var course = row.getAttribute('data-course') || '';
+            row.style.display = (courseFilter === '' || course === courseFilter) ? '' : 'none';
+        });
+
+        // Sort visible rows
+        var visible = rows.filter(function(r) { return r.style.display !== 'none'; });
+
+        if (dateFilter === 'newest' || dateFilter === 'oldest') {
+            visible.sort(function(a, b) {
+                var ta = parseInt(a.getAttribute('data-start')) || 0;
+                var tb = parseInt(b.getAttribute('data-start')) || 0;
+                return dateFilter === 'newest' ? tb - ta : ta - tb;
+            });
+        } else if (studentFilter === 'az' || studentFilter === 'za') {
+            visible.sort(function(a, b) {
+                var sa = a.getAttribute('data-student') || '';
+                var sb = b.getAttribute('data-student') || '';
+                return studentFilter === 'az' ? sa.localeCompare(sb) : sb.localeCompare(sa);
+            });
+        }
+
+        visible.forEach(function(row) { tbody.appendChild(row); });
+    }
+
+    function clearFilters() {
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterStudent').value = '';
+        document.getElementById('filterCourse').value = '';
+        var tbody = document.querySelector('#appointments .apptTable tbody');
+        if (!tbody) return;
+        Array.from(tbody.querySelectorAll('tr')).forEach(function(r) { r.style.display = ''; });
+    }
+
+    function openEditModal(btn) {
+        var id = btn.getAttribute('data-id');
+        var start = btn.getAttribute('data-start');
+        var end = btn.getAttribute('data-end');
+        document.getElementById('editForm').action = '/admin/appointment/edit/' + id;
+        document.getElementById('editStart').value = toLocalInput(start);
+        document.getElementById('editEnd').value = toLocalInput(end);
+        document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('open');
+    }
+
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEditModal();
+    });
 </script>
+
+<div id="editModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Edit Appointment</h3>
+        <form id="editForm" method="POST">
+            <label for="editStart">Start Date &amp; Time</label>
+            <input type="datetime-local" id="editStart" name="start" required />
+            <label for="editEnd">End Date &amp; Time</label>
+            <input type="datetime-local" id="editEnd" name="end" required />
+            <div class="modal-actions">
+                <button type="button" class="btnModalClose" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btnModalSave">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <%- include("../Includes/_footer") %>

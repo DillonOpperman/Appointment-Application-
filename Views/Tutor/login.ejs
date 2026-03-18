@@ -2,12 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Student Login</title>
+    <title>Tutor Login</title>
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Google Fonts for ISU style -->
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
@@ -32,16 +29,8 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
-        .page-header-left {
-            display: flex;
-            align-items: center;
-            gap: 50px;
-        }
         .page-header img {
             height: 50px;
-        }
-        .page-nav button, .page-nav a {
-            margin-left: 10px;
         }
 
         .btn-red {
@@ -69,7 +58,6 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
 
-        /* Footer styling */
         .footer {
             background-color: #e92121;
             color: white;
@@ -82,53 +70,38 @@
 <body>
 
 <header class="page-header">
-    <h2 style="color: #e92121;">Student Portal</h2>
+    <h2 style="color: #e92121;">Tutor Portal</h2>
     <a href="/home">
-        <img src="/assets/images/isu.png" alt="ISU Logo" >
+        <img src="/assets/images/isu.png" alt="ISU Logo">
     </a>
 </header>
 
 <div class="container d-flex justify-content-center align-items-center flex-grow-1">
     <div class="login-card col-12 col-md-6 col-lg-4">
-        <h1 class="mb-4 text-center" style="color: #e92121;">Login</h1>
+        <h1 class="mb-2 text-center" style="color: #e92121;">Login</h1>
+
         <% if (error) { %>
-            <div class="alert alert-danger"><%= error %></div>
+            <div class="alert alert-danger"><strong>Error:</strong> <%= error %></div>
         <% } %>
 
-        <% if (hasPendingBooking) { %>
-            <div class="alert alert-light border">
-                <strong>Booking Slot:</strong><br>
-                Tutor: <%= pendingBooking.tutorName || 'Selected Tutor' %><br>
-                Course: <%= pendingBooking.course %><br>
-                Start: <%= new Date(pendingBooking.start).toLocaleString() %><br>
-                End: <%= new Date(pendingBooking.end).toLocaleString() %>
-            </div>
-        <% } %>
-
-        <form action='/submitStudentLogin' method="POST">
+        <form action="/submitTutorLogin" method="POST">
             <div class="mb-3">
-                <label for="studentEmail" class="form-label">Email</label>
-                <input type="text" class="form-control" id="studentEmail" name="studentEmail" required>
+                <label for="tutorEmail" class="form-label">Email</label>
+                <input id="tutorEmail" class="form-control" type="text" name="tutorEmail" required>
             </div>
             <div class="mb-3">
-                <label for="studentPassword" class="form-label">Password</label>
-                <input type="password" class="form-control" id="studentPassword" name="studentPassword" required>
+                <label for="tutorPassword" class="form-label">Password</label>
+                <input id="tutorPassword" class="form-control" type="password" name="tutorPassword" required>
             </div>
-            <% if (hasPendingBooking) { %>
-                <input type="hidden" name="tutorId" value="<%= pendingBooking.tutorId %>">
-                <input type="hidden" name="tutorName" value="<%= pendingBooking.tutorName %>">
-                <input type="hidden" name="course" value="<%= pendingBooking.course %>">
-                <input type="hidden" name="start" value="<%= pendingBooking.start %>">
-                <input type="hidden" name="end" value="<%= pendingBooking.end %>">
-            <% } %>
-            <button type="submit" class="btn btn-red w-100">Login</button>
+            <button class="btn btn-red w-100" type="submit">Login</button>
         </form>
     </div>
 </div>
 
-<%- include("../Includes/_footer") %>
+<footer class="footer">
+    <p>&copy; 2026 Illinois State University | Appointment System</p>
+</footer>
 
-<!-- Bootstrap JS  -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

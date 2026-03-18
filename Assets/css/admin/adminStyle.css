@@ -114,7 +114,60 @@ body {
     display: block;
 }
 
-/* Tab headings */
+/* Appointments filter bar */
+.apptFilterBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #CE1126;
+}
+
+.apptFilterBar h2 {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.apptFilters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.apptFilters select {
+    padding: 7px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.apptFilters select:focus {
+    outline: none;
+    border-color: #CE1126;
+}
+
+.btnClearFilters {
+    background-color: #555;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btnClearFilters:hover {
+    background-color: #333;
+}
+
+/* Tab headings (non-filter tabs) */
 .mainContent h2 {
     font-size: 24px;
     color: #000000;
@@ -192,6 +245,104 @@ body {
 
 .btnCancel:hover {
     background-color: #a50e1f;
+}
+
+/* Edit button */
+.btnEdit {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btnEdit:hover {
+    background-color: #0052a3;
+}
+
+/* Edit Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal-box {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    width: 420px;
+    max-width: 95vw;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-box h3 {
+    margin-bottom: 20px;
+    color: #CE1126;
+    border-bottom: 2px solid #CE1126;
+    padding-bottom: 8px;
+}
+
+.modal-box label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.modal-box input[type="datetime-local"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 15px;
+    margin-bottom: 16px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.btnModalSave {
+    background-color: #CE1126;
+    color: white;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.btnModalSave:hover {
+    background-color: #a50e1f;
+}
+
+.btnModalClose {
+    background-color: #aaa;
+    color: white;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.btnModalClose:hover {
+    background-color: #888;
 }
 
 /* Empty state */

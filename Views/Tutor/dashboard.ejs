@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tutor Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #e92121, #ffffff);
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Merriweather', serif;
+        }
+
+        .page-header {
+            background-color: white;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .page-header img {
+            height: 50px;
+        }
+
+        .dashboard-wrapper {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+            width: min(1200px, 95%);
+            margin: 20px auto;
+            flex: 1;
+        }
+
+        .sidebar {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .sidebar a {
+            display: block;
+            text-decoration: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #7d1c1c;
+            font-weight: 600;
+            background: #f5f5f5;
+        }
+
+        .sidebar a.active {
+            background: #e92121;
+            color: white;
+        }
+
+        .panel {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 22px;
+        }
+
+        .badge-booked {
+            background: #007bff;
+        }
+
+        .badge-cancelled {
+            background: #6c757d;
+        }
+
+        .badge-completed {
+            background: #28a745;
+        }
+
+        .badge-noshow {
+            background: #dc3545;
+        }
+
+        .footer {
+            background-color: #e92121;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .att-show   { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+.att-noshow { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
+.modal-backdrop-custom {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1050;
+    justify-content: center;
+    align-items: center;
+}
+.modal-backdrop-custom.open { display: flex; }
+
+.notes-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 28px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+}
+.notes-modal h5 {
+    color: #e92121;
+    border-bottom: 2px solid #e92121;
+    padding-bottom: 8px;
+    margin-bottom: 18px;
+}
+
+.attendance-bubbles { display: flex; gap: 12px; margin-top: 6px; }
+.attendance-bubbles input[type="radio"] { display: none; }
+.attendance-bubbles label {
+    padding: 8px 22px;
+    border-radius: 20px;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    user-select: none;
+}
+.attendance-bubbles input[value="show"]:checked + label {
+    border-color: #198754;
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+.attendance-bubbles input[value="noshow"]:checked + label {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+    color: #842029;
+}
+.attendance-bubbles label:hover { border-color: #e92121; }
+
+.btn-save { background-color: #e92121; border-color: #e92121; color: white; }
+.btn-save:hover { background-color: #8c1f1f; color: white; }
+
+.comment-bubble {
+    background: #fff5f5;
+    border-left: 3px solid #e92121;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.83rem;
+    color: #333;
+    margin-bottom: 4px;
+}
+.comment-bubble .comment-meta { font-size: 0.75rem; color: #888; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+<header class="page-header">
+    <div>
+        <h2 style="color: #e92121; margin-bottom: 0;">Tutor Portal</h2>
+        <small class="text-muted">Signed in as <%= tutor.name %> (<%= tutor.email %>)</small>
+    </div>
+    <a href="/home">
+        <img src="/assets/images/isu.png" alt="ISU Logo">
+    </a>
+</header>
+
+<div class="dashboard-wrapper">
+    <aside class="sidebar">
+        <h4 style="color: #e92121;">Tutor Panel</h4>
+        <a class="active" href="/tutorDashboard">My Appointments</a>
+        <a href="/logout">Logout</a>
+    </aside>
+
+    <main class="panel">
+        <h3>My Appointments</h3>
+        <% if (typeof notice !== 'undefined' && notice) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= notice %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+        <% if (!appointments.length) { %>
+            <div class="alert alert-light border mt-3">No appointments assigned yet.</div>
+        <% } else { %>
+            <div class="table-responsive mt-3">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Actions</th>
+                            <th>Status</th>
+                            <th>Attendance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% appointments.forEach(function(appt) { %>
+                            <tr>
+                                <td><%= appt.student ? appt.student.name : 'N/A' %></td>
+                                <td><%= appt.course %></td>
+                                <td><%= new Date(appt.start).toLocaleString() %></td>
+                                <td><%= new Date(appt.end).toLocaleString() %></td>
+                                
+                                <td>
+                                    <% var studentLabel = appt.student ? appt.student.name : 'N/A'; %>
+                                    <% var actualStartVal = appt.actualStart ? new Date(appt.actualStart).toISOString().slice(0,16) : ''; %>
+                                    <% var actualEndVal = appt.actualEnd ? new Date(appt.actualEnd).toISOString().slice(0,16) : ''; %>
+                                    <button
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="openNotesModal(
+                                            '<%= appt._id %>',
+                                            '<%= studentLabel %>',
+                                            '<%= appt.status %>',
+                                            '<%= actualStartVal %>',
+                                            '<%= actualEndVal %>'
+                                        )">
+                                        📝 Notes
+                                    </button>
+                                </td>
+
+                                <td>
+                                    <span class="badge badge-<%= appt.status %>"><%= appt.status %></span>
+                                </td>
+                                <td>
+                                    <% if (appt.status === 'completed') { %>
+                                        <span class="badge att-show">✓ Show</span>
+                                    <% } else if (appt.status === 'noshow') { %>
+                                        <span class="badge att-noshow">✗ No Show</span>
+                                    <% } else { %>
+                                        <span class="text-muted" style="font-size:0.85rem;">—</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                            <% if (appt.comments && appt.comments.length > 0) { %>
+                            <tr class="table-light">
+                                <td colspan="7" style="padding: 8px 16px;">
+                                    <% appt.comments.forEach(function(c) { %>
+                                        <div class="comment-bubble">
+                                            <div class="comment-meta">
+                                                <%= c.author ? c.author.name : 'Tutor' %> &middot;
+                                                <%= new Date(c.createdAt).toLocaleString() %>
+                                            </div>
+                                            <%= c.commentText %>
+                                        </div>
+                                    <% }); %>
+                                </td>
+                            </tr>
+                            <% } %>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </main>
+</div>
+
+<footer class="footer">
+    <p>&copy; 2026 Illinois State University | Appointment System</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Notes Modal -->
+<div class="modal-backdrop-custom" id="notesModal">
+    <div class="notes-modal">
+        <h5 id="modalTitle">Session Notes</h5>
+        <form id="notesForm" method="POST">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Add a Comment</label>
+                <textarea name="commentText" class="form-control" rows="3"
+                    placeholder="Write a note about this session..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Attendance</label>
+                <div class="attendance-bubbles">
+                    <input type="radio" name="attendance" id="attShow" value="show">
+                    <label for="attShow">✓ Show</label>
+                    <input type="radio" name="attendance" id="attNoShow" value="noshow">
+                    <label for="attNoShow">✗ No Show</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Actual Start Time</label>
+                <input type="datetime-local" name="actualStart" id="modalActualStart" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Actual End Time</label>
+                <input type="datetime-local" name="actualEnd" id="modalActualEnd" class="form-control">
+            </div>
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                <button type="button" class="btn btn-secondary" onclick="closeNotesModal()">Cancel</button>
+                <button type="submit" class="btn btn-save">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openNotesModal(apptId, studentName, status, actualStart, actualEnd) {
+        document.getElementById('notesForm').action = '/tutor/appointment/' + apptId + '/session';
+        document.getElementById('modalTitle').textContent = 'Session Notes — ' + studentName;
+        if (status === 'completed') {
+            document.getElementById('attShow').checked = true;
+        } else if (status === 'noshow') {
+            document.getElementById('attNoShow').checked = true;
+        } else {
+            document.getElementById('attShow').checked = false;
+            document.getElementById('attNoShow').checked = false;
+        }
+        document.getElementById('modalActualStart').value = actualStart || '';
+        document.getElementById('modalActualEnd').value = actualEnd || '';
+        document.getElementById('notesModal').classList.add('open');
+    }
+
+    function closeNotesModal() {
+        document.getElementById('notesModal').classList.remove('open');
+    }
+
+    document.getElementById('notesModal').addEventListener('click', function(e) {
+        if (e.target === this) closeNotesModal();
+    });
+</script>
+
+</body>
+</html>

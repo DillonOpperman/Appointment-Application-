@@ -21,9 +21,9 @@
             font-family: 'Merriweather', serif;
         }
 
-        /* Navbar */
+    
         .navbar-custom {
-            background-color: #fcfbfb; /* Correct ISU red */
+            background-color: #fcfbfb; 
         }
 
         .navbar-custom .navbar-brand {
@@ -55,6 +55,47 @@
             flex-grow: 1;
         }
 
+        .appointments-section {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            margin-bottom: 24px;
+        }
+
+        .appointments-section h2 {
+            color: #7d1c1c;
+        }
+
+        .slot-table td,
+        .slot-table th {
+            vertical-align: middle;
+        }
+
+        .book-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            min-width: 280px;
+        }
+
+        .book-form .full {
+            grid-column: 1 / -1;
+        }
+
+        .btn-book {
+            background-color: #e92121;
+            border-color: #e92121;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-book:hover {
+            background-color: #8c1f1f;
+            border-color: #8c1f1f;
+            color: #fff;
+        }
+
         .carousel-item img {
             border-radius: 10px;
             max-height: 500px;
@@ -69,6 +110,13 @@
             text-align: center;
             padding: 15px 0;
             margin-top: auto;
+        }
+
+        @media (max-width: 992px) {
+            .book-form {
+                grid-template-columns: 1fr;
+                min-width: 220px;
+            }
         }
     </style>
 </head>
@@ -114,6 +162,165 @@
             <span class="visually-hidden">Next</span>
         </button>
     </div>
+</div>
+
+<!-- Center Info Section -->
+<div class="container mb-4">
+    <style>
+        .center-info-section {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 14px;
+            padding: 28px 32px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            margin-bottom: 24px;
+        }
+        .center-info-section h2 {
+            color: #7d1c1c;
+            margin-bottom: 4px;
+        }
+        .center-info-section .section-subtitle {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+        .info-card {
+            background: #fff5f5;
+            border-left: 4px solid #e92121;
+            border-radius: 8px;
+            padding: 18px 20px;
+            height: 100%;
+        }
+        .info-card h5 {
+            color: #e92121;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .info-card p {
+            font-size: 0.93rem;
+            color: #333;
+            margin: 0;
+            line-height: 1.7;
+        }
+        .info-card table {
+            width: 100%;
+            font-size: 0.92rem;
+        }
+        .info-card table td {
+            padding: 3px 0;
+            color: #333;
+        }
+        .info-card table td:last-child {
+            text-align: right;
+        }
+        .closed {
+            color: #aaa;
+            font-style: italic;
+        }
+    </style>
+
+    <section class="center-info-section">
+        <h2 class="mb-1">About the IT Learning Center</h2>
+        <p class="section-subtitle">Walk-ins welcome during open hours. Appointments are recommended for guaranteed availability.</p>
+
+        <div class="row g-3">
+
+            <div class="col-12 col-md-4">
+                <div class="info-card">
+                    <h5>Location</h5>
+                    <p>
+                        Illinois State University<br>
+                        College of Applied Science &amp; Technology<br>
+                        <strong>Hovey Hall, Room 010</strong><br>
+                        Normal, IL 61790
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="info-card">
+                    <h5>Contact</h5>
+                    <p>
+                        Phone: <strong>(309) 438-8338</strong><br>
+                        Email: <strong>itlearning@ilstu.edu</strong><br><br>
+                        For appointment issues, contact the center directly.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="info-card">
+                    <h5>Center Hours</h5>
+                    <table>
+                        <tr><td>Monday</td>    <td>9:00 AM - 6:00 PM</td></tr>
+                        <tr><td>Tuesday</td>   <td>9:00 AM - 6:00 PM</td></tr>
+                        <tr><td>Wednesday</td> <td>9:00 AM - 6:00 PM</td></tr>
+                        <tr><td>Thursday</td>  <td>9:00 AM - 6:00 PM</td></tr>
+                        <tr><td>Friday</td>    <td>9:00 AM - 4:00 PM</td></tr>
+                        <tr><td>Saturday</td>  <td class="closed">Closed</td></tr>
+                        <tr><td>Sunday</td>    <td class="closed">Closed</td></tr>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<div id="appointments" class="container mb-4">
+    <section class="appointments-section">
+        <h2 class="mb-2">Available Appointments</h2>
+        <p class="text-muted mb-3">Scroll, pick a tutor slot, and book directly from home.</p>
+
+        <% if (notice) { %>
+            <div class="alert <%= noticeType === 'success' ? 'alert-success' : 'alert-danger' %>" role="alert">
+                <%= notice %>
+            </div>
+        <% } %>
+
+        <% if (!availableSlots || !availableSlots.length) { %>
+            <div class="alert alert-light border">No upcoming appointment slots are currently available.</div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-striped slot-table">
+                    <thead>
+                        <tr>
+                            <th>Tutor</th>
+                            <th>Course</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Schedule</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% availableSlots.forEach(function(slot) { %>
+                            <tr>
+                                <td>
+                                    <strong><%= slot.tutorName %></strong><br>
+                                    <small class="text-muted"><%= slot.tutorEmail %></small>
+                                </td>
+                                <td><%= slot.course %></td>
+                                <td><%= new Date(slot.start).toLocaleString() %></td>
+                                <td><%= new Date(slot.end).toLocaleString() %></td>
+                                <td>
+                                    <form class="book-form" action="/studentLogin" method="GET">
+                                        <input type="hidden" name="tutorId" value="<%= slot.tutorId %>">
+                                        <input type="hidden" name="tutorName" value="<%= slot.tutorName %>">
+                                        <input type="hidden" name="course" value="<%= slot.course %>">
+                                        <input type="hidden" name="start" value="<%= slot.startIso %>">
+                                        <input type="hidden" name="end" value="<%= slot.endIso %>">
+                                        <button class="btn btn-sm btn-book full" type="submit">Book</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </section>
 </div>
 
 

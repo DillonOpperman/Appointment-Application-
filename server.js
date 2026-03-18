@@ -1,3 +1,6 @@
+// Developed by Dillon Opperman
+// Special thanks to Stefan for his contributions to this project
+
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -9,6 +12,7 @@ const connectDB = require('./Servers/Database/connect');
 const authRoutes = require('./Servers/Routes/authRoutes');
 const adminRoutes = require('./Servers/Routes/adminRoutes');
 const studentRoutes = require('./Servers/routes/studentRoutes');
+const tutorRoutes = require('./Servers/routes/tutorRoutes');
 const User = require('./Servers/Model/User');
 
 
@@ -27,16 +31,11 @@ app.use('/assets', express.static(path.join(__dirname, 'Assets')));
 // Routes 
 app.use('/api/auth', authRoutes);
 app.use('/', adminRoutes);
-app.use('/',studentRoutes)
+app.use('/', studentRoutes);
+app.use('/', tutorRoutes);
 
 app.get('/', (req, res) => {
  res.redirect('/home');
-});
-
-// Home
-app.get('/home', (req, res) => {
-    //res.sendFile(path.join(__dirname, 'Views/html/home/home.html'));
-    res.render('../Views/Home/home');
 });
 
 // Student Routes 
@@ -54,65 +53,39 @@ app.get('/home', (req, res) => {
 
 
 
-// Tutor routes
-app.get('/tutorLogin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Views/html/tutor/TutorPage.html'));
-});
-app.get('/tutorDashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Views/html/tutor/tutorDashboard.html'));
-});
-app.get('/tutorAppointments', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Views/html/tutor/tutorAppointments.html'));
-});
-app.get('/tutorHours', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Views/html/tutor/tutorHours.html'));
-});
-app.post('/submitTutorLogin', async (req, res) => {
-    try {
-        const email = (req.body.tutorEmail || '').toLowerCase().trim();
-        const password = req.body.tutorPassword || '';
+async function ensureSeedUsers() {
+    const seedPassword = 'RyzenDell3D!';
+    const passwordHash = await bcrypt.hash(seedPassword, 12);
 
-        const user = await User.findOne({ email, role: 'tutor', active: true });
-        if (!user) {
-            return res.status(401).send('Invalid tutor credentials.');
+    const seedUsers = [
+        { role: 'admin', name: 'Test Admin', email: 'testuser_admin@example.com' },
+        { role: 'tutor', name: 'Test Tutor', email: 'testuser_tutor@example.com' },
+        { role: 'student', name: 'Test Student', email: 'testuser_student@example.com' },
+        { role: 'tutor', name: 'D Lopper', email: 'dlopper@ilstu.edu' }
+    ];
+
+    for (const seedUser of seedUsers) {
+        const existingUser = await User.findOne({ email: seedUser.email.toLowerCase() });
+        if (existingUser) {
+            continue;
         }
 
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
-        if (!isMatch) {
-            return res.status(401).send('Invalid tutor credentials.');
-        }
+        await User.create({
+            role: seedUser.role,
+            name: seedUser.name,
+            email: seedUser.email,
+            passwordHash,
+            active: true
+        });
 
-        return res.redirect('/tutorDashboard');
-    } catch (error) {
-        return res.status(500).send('Tutor login failed.');
+        console.log('Seeded test user:', seedUser.email);
     }
-});
-
-async function ensureTutorSeedUser() {
-    const tutorEmail = 'dlopper@ilstu.edu';
-    const tutorPassword = 'RyzenDell3D!';
-
-    const existingTutor = await User.findOne({ email: tutorEmail.toLowerCase() });
-    if (existingTutor) {
-        return;
-    }
-
-    const passwordHash = await bcrypt.hash(tutorPassword, 12);
-    await User.create({
-        role: 'tutor',
-        name: 'D Lopper',
-        email: tutorEmail,
-        passwordHash,
-        active: true
-    });
-
-    console.log('Seeded tutor test user:', tutorEmail);
 }
 
 async function startServer() {
     try {
         await connectDB();
-        await ensureTutorSeedUser();
+        await ensureSeedUsers();
         app.listen(PORT, () => {
             console.log('Server running on port', PORT);
         });

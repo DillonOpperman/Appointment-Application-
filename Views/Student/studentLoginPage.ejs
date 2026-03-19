@@ -100,8 +100,8 @@
                 <strong>Booking Slot:</strong><br>
                 Tutor: <%= pendingBooking.tutorName || 'Selected Tutor' %><br>
                 Course: <%= pendingBooking.course %><br>
-                Start: <%= new Date(pendingBooking.start).toLocaleString() %><br>
-                End: <%= new Date(pendingBooking.end).toLocaleString() %>
+                Start: <%= new Date(pendingBooking.start).toLocaleString('en-US', { hour12: true }) %><br>
+                End: <%= new Date(pendingBooking.end).toLocaleString('en-US', { hour12: true }) %>
             </div>
         <% } %>
 

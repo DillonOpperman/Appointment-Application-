@@ -5,6 +5,55 @@ const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+function parseTimeToMinutes(timeValue) {
+    const raw = String(timeValue || '').trim();
+    if (!raw) {
+        return null;
+    }
+
+    const twelveHourMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (twelveHourMatch) {
+        let hours = Number(twelveHourMatch[1]);
+        const minutes = Number(twelveHourMatch[2]);
+        const meridiem = twelveHourMatch[3].toUpperCase();
+
+        if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+            return null;
+        }
+
+        if (hours === 12) {
+            hours = 0;
+        }
+        if (meridiem === 'PM') {
+            hours += 12;
+        }
+
+        return hours * 60 + minutes;
+    }
+
+    const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (!twentyFourHourMatch) {
+        return null;
+    }
+
+    const hours = Number(twentyFourHourMatch[1]);
+    const minutes = Number(twentyFourHourMatch[2]);
+
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return null;
+    }
+
+    return hours * 60 + minutes;
+}
+
+function formatMinutesTo12Hour(totalMinutes) {
+    const hours24 = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = ((hours24 + 11) % 12) + 1;
+    return `${hours12}:${String(minutes).padStart(2, '0')} ${meridiem}`;
+}
+
 exports.showLogin = (req, res) => {
     res.render('Admin/login', { error: null });
 };
@@ -160,13 +209,21 @@ exports.addAvailability = async (req, res) => {
             return res.status(400).send('Tutor, start time, and end time are required.');
         }
 
+        const startMinutes = parseTimeToMinutes(startTime);
+        const endMinutes = parseTimeToMinutes(endTime);
+        if (startMinutes === null || endMinutes === null) {
+            return res.status(400).send('Invalid time format.');
+        }
+        if (startMinutes >= endMinutes) {
+            return res.status(400).send('End time must be after start time.');
+        }
+
+        const normalizedStartTime = formatMinutesTo12Hour(startMinutes);
+        const normalizedEndTime = formatMinutesTo12Hour(endMinutes);
+
         const tutor = await User.findOne({ _id: tutorId, role: 'tutor' });
         if (!tutor) {
             return res.status(404).send('Tutor not found.');
-        }
-
-        if (startTime >= endTime) {
-            return res.status(400).send('End time must be after start time.');
         }
 
         // Infer block type from submitted fields so admins are not blocked by UI mismatch.
@@ -183,10 +240,11 @@ exports.addAvailability = async (req, res) => {
 
         const blockPayload = {
             tutor: tutor._id,
+            tutorName: tutor.name,
             createdBy: req.user.id,
             course: (course || 'IT 330').trim(),
-            startTime,
-            endTime,
+            startTime: normalizedStartTime,
+            endTime: normalizedEndTime,
             isException: normalizedBlockType === 'date',
             isBlackoutDate: isBlackoutDate === 'on'
         };

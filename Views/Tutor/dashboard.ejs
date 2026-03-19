@@ -217,8 +217,8 @@
                             <tr>
                                 <td><%= appt.student ? appt.student.name : 'N/A' %></td>
                                 <td><%= appt.course %></td>
-                                <td><%= new Date(appt.start).toLocaleString() %></td>
-                                <td><%= new Date(appt.end).toLocaleString() %></td>
+                                <td><%= new Date(appt.start).toLocaleString('en-US', { hour12: true }) %></td>
+                                <td><%= new Date(appt.end).toLocaleString('en-US', { hour12: true }) %></td>
                                 
                                 <td>
                                     <% var studentLabel = appt.student ? appt.student.name : 'N/A'; %>
@@ -257,7 +257,7 @@
                                         <div class="comment-bubble">
                                             <div class="comment-meta">
                                                 <%= c.author ? c.author.name : 'Tutor' %> &middot;
-                                                <%= new Date(c.createdAt).toLocaleString() %>
+                                                <%= new Date(c.createdAt).toLocaleString('en-US', { hour12: true }) %>
                                             </div>
                                             <%= c.commentText %>
                                         </div>

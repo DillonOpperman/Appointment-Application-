@@ -5,7 +5,29 @@ const bcrypt = require('bcryptjs');
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
 
 function combineDateAndTime(dateObj, timeString) {
-    const [hours, minutes] = (timeString || '00:00').split(':').map(Number);
+    const raw = String(timeString || '').trim();
+    const twelveHourMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+    let hours = 0;
+    let minutes = 0;
+
+    if (twelveHourMatch) {
+        hours = Number(twelveHourMatch[1]);
+        minutes = Number(twelveHourMatch[2]);
+        const meridiem = twelveHourMatch[3].toUpperCase();
+
+        if (hours === 12) {
+            hours = 0;
+        }
+        if (meridiem === 'PM') {
+            hours += 12;
+        }
+    } else {
+        const [parsedHours, parsedMinutes] = (raw || '00:00').split(':').map(Number);
+        hours = Number.isFinite(parsedHours) ? parsedHours : 0;
+        minutes = Number.isFinite(parsedMinutes) ? parsedMinutes : 0;
+    }
+
     const combined = new Date(dateObj);
     combined.setHours(hours || 0, minutes || 0, 0, 0);
     return combined;

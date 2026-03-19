@@ -2,7 +2,7 @@ const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
-
+const path = require('path')
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
 
 function combineDateAndTime(dateObj, timeString) {
@@ -104,7 +104,10 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
     
     return { ok: true };
 }
-
+async function getTutors(){
+    const tutors = await User.find({ role: "tutor" });
+    return tutors
+}
 exports.showLogin = (req, res) => {
     //res.sendStatus(200);
     //res.sendFile(path.join(__dirname,'../../Views/html/student/studentLoginPage.html'));
@@ -116,14 +119,41 @@ exports.submitLogin = (req, res) => {
         //studentPassword: req.body.studentPassword
     });
 }
-exports.showHome = (req, res) => {
+exports.showHome = async (req, res) => {
     //res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword);
 
-    res.render("Student/studentHome", {
-        //studentEmail: req.body.studentEmail,
-        //studentPassword: req.body.studentPassword
-    });
-};
-exports.createAppointment = (req, res) => {
+    try {
+        tutors = await getTutors();
+        students = await User.find({ role: "student" });
+        res.render("Student/studentHome", {
+            tutors: tutors,
+            students: students
+        });
 
+    } catch (err) {
+        console.error(err);
+        res.send("Error loading tutors");
+    }
+};
+exports.createAppointment = async (req, res) => {
+    try {
+        const start = new Date(req.body.scheduledStart);
+
+        const end = new Date(start);
+        end.setHours(end.getHours() + 1);
+
+        await Appointment.create({
+            student: req.body.studentId,
+            tutor: req.body.tutorId,
+            course: req.body.course,
+            start,
+            end
+        });
+
+        res.redirect("/studentHome");
+
+    } catch (err) {
+        console.error(err);
+        res.send("Error creating appointment");
+    }
 };

@@ -2,7 +2,6 @@ const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
-const path = require('path')
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
 
 function combineDateAndTime(dateObj, timeString) {
@@ -126,56 +125,180 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
     
     return { ok: true };
 }
-async function getTutors(){
-    const tutors = await User.find({ role: "tutor" });
-    return tutors
-}
-exports.showLogin = (req, res) => {
-    //res.sendStatus(200);
-    //res.sendFile(path.join(__dirname,'../../Views/html/student/studentLoginPage.html'));
-    res.render('Student/studentLoginPage')
-};
-exports.submitLogin = (req, res) => {
-    res.redirect("/studentHome", {
-        //studentEmail: req.body.studentEmail,
-        //studentPassword: req.body.studentPassword
-    });
-}
-exports.showHome = async (req, res) => {
-    //res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword);
 
+exports.showLogin = (req, res) => {
+    const pendingBooking = {
+        tutorId: req.query.tutorId || '',
+        tutorName: req.query.tutorName || '',
+        course: req.query.course || '',
+        start: req.query.start || '',
+        end: req.query.end || ''
+    };
+
+    const hasPendingBooking = Boolean(
+        pendingBooking.tutorId && pendingBooking.course && pendingBooking.start && pendingBooking.end
+    );
+
+    res.render('Student/studentLoginPage', {
+        error: null,
+        pendingBooking,
+        hasPendingBooking
+    });
+};
+
+exports.showHome = async (req, res) => {
     try {
-        tutors = await getTutors();
-        students = await User.find({ role: "student" });
-        res.render("Student/studentHome", {
-            tutors: tutors,
-            students: students
+        const now = new Date();
+        const horizonDays = 14;
+        const horizonEnd = new Date(now);
+        horizonEnd.setDate(horizonEnd.getDate() + horizonDays);
+
+        const tutors = await User.find({ role: 'tutor', active: true }).select('_id name email');
+        const tutorMap = new Map(tutors.map((tutor) => [String(tutor._id), tutor]));
+
+        const blocks = await AvailabilityBlock.find({ tutor: { $in: tutors.map((t) => t._id) } })
+            .sort({ createdAt: -1 });
+
+        const bookedAppointments = await Appointment.find({
+            status: 'booked',
+            start: { $lt: horizonEnd },
+            end: { $gt: now }
+        }).select('tutor start end');
+
+        const slotCandidates = [];
+        for (let dayOffset = 0; dayOffset < horizonDays; dayOffset += 1) {
+            const day = new Date(now);
+            day.setHours(0, 0, 0, 0);
+            day.setDate(day.getDate() + dayOffset);
+
+            blocks.forEach((block) => {
+                const tutor = tutorMap.get(String(block.tutor));
+                if (!tutor || block.isBlackoutDate) {
+                    return;
+                }
+
+                let appliesToDay = false;
+                if (block.isException) {
+                    if (block.date) {
+                        appliesToDay = getDateKey(block.date) === getDateKey(day);
+                    }
+                } else if (block.dayOfWeek === day.getDay()) {
+                    appliesToDay = true;
+                }
+
+                if (!appliesToDay) {
+                    return;
+                }
+
+                const slotStart = combineDateAndTime(day, block.startTime);
+                const slotEnd = combineDateAndTime(day, block.endTime);
+                if (slotStart <= now || slotEnd <= slotStart) {
+                    return;
+                }
+
+                slotCandidates.push({
+                    tutorId: String(tutor._id),
+                    tutorName: tutor.name,
+                    tutorEmail: tutor.email,
+                    course: block.course || 'IT 330',
+                    start: slotStart,
+                    end: slotEnd
+                });
+            });
+        }
+
+        const availableSlots = slotCandidates.filter((slot) => {
+            return !bookedAppointments.some((appt) => {
+                if (String(appt.tutor) !== slot.tutorId) {
+                    return false;
+                }
+                return slot.start < appt.end && appt.start < slot.end;
+            });
         });
 
-    } catch (err) {
-        console.error(err);
-        res.send("Error loading tutors");
+        availableSlots.sort((a, b) => a.start - b.start);
+
+        const viewSlots = availableSlots.slice(0, 40).map((slot) => ({
+            ...slot,
+            startIso: slot.start.toISOString(),
+            endIso: slot.end.toISOString()
+        }));
+
+        const notice = req.query.booked === '1'
+            ? 'Appointment booked successfully.'
+            : req.query.error === 'slot_taken'
+                ? 'That appointment slot was just taken. Please choose another.'
+                : req.query.error === 'missing_fields'
+                    ? 'Please fill out all booking fields.'
+                    : req.query.error === 'invalid_tutor'
+                        ? 'Selected tutor could not be found.'
+                            : req.query.error === 'invalid_role'
+                                ? 'That email belongs to a non-student account. Use another email.'
+                            : req.query.error === 'booking_failed'
+                                ? 'Booking failed. Please try again.'
+                                : null;
+
+        return res.render('Home/home', {
+            availableSlots: viewSlots,
+            notice,
+            noticeType: req.query.booked === '1' ? 'success' : 'error'
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Unable to load home page appointment availability.');
     }
 };
-exports.createAppointment = async (req, res) => {
+
+exports.submitLogin = async (req, res) => {
     try {
-        const start = new Date(req.body.scheduledStart);
+        const { studentEmail, studentPassword, tutorId, tutorName, course, start, end } = req.body;
 
-        const end = new Date(start);
-        end.setHours(end.getHours() + 1);
+        const hasPendingBooking = Boolean(tutorId && course && start && end);
 
-        await Appointment.create({
-            student: req.body.studentId,
-            tutor: req.body.tutorId,
-            course: req.body.course,
+        const authResult = await authenticateOrCreateStudent(studentEmail, studentPassword);
+        if (authResult.error) {
+            return res.status(401).render('Student/studentLoginPage', {
+                error: authResult.error,
+                hasPendingBooking,
+                pendingBooking: {
+                    tutorId: tutorId || '',
+                    tutorName: tutorName || '',
+                    course: course || '',
+                    start: start || '',
+                    end: end || ''
+                }
+            });
+        }
+
+        if (!hasPendingBooking) {
+            return res.redirect('/home');
+        }
+
+        const bookingResult = await createAppointmentForSlot({
+            tutorId,
+            course,
             start,
-            end
+            end,
+            student: authResult.student
         });
 
-        res.redirect("/studentHome");
+        if (bookingResult.errorCode) {
+            return res.redirect(`/home?error=${bookingResult.errorCode}#appointments`);
+        }
 
-    } catch (err) {
-        console.error(err);
-        res.send("Error creating appointment");
+        return res.redirect('/home?booked=1#appointments');
+    } catch (error) {
+        console.error(error);
+        return res.status(500).render('Student/studentLoginPage', {
+            error: 'Login or booking failed. Please try again.',
+            hasPendingBooking: false,
+            pendingBooking: {
+                tutorId: '',
+                tutorName: '',
+                course: '',
+                start: '',
+                end: ''
+            }
+        });
     }
 };

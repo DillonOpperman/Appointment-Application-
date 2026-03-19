@@ -271,7 +271,7 @@ exports.submitLogin = async (req, res) => {
         }
 
         const jwt = require('jsonwebtoken');
-        const token = jwt.sign(
+    const token = jwt.sign(
     { id: authResult.student._id, email: authResult.student.email, role: 'student' },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }

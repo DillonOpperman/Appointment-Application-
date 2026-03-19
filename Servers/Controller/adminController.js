@@ -4,6 +4,7 @@ const AuditLog = require('../Model/AuditLog');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { sendCancellationConfirmation } = require('../middleware/emailService');
 
 function parseTimeToMinutes(timeValue) {
     const raw = String(timeValue || '').trim();
@@ -147,7 +148,22 @@ exports.editAppointment = async (req, res) => {
             req.params.id,
             { status: 'cancelled' },
             { new: true }
-        ).populate('student', 'email').populate('tutor', 'email');
+        ).populate('student', 'name email').populate('tutor', 'name email');
+        if (!appointment) {
+            return res.status(404).send('Appointment not found.');
+        }
+
+        if (appointment.student && appointment.student.email) {
+            sendCancellationConfirmation({
+                studentEmail: appointment.student.email,
+                studentName: appointment.student.name || 'Student',
+                tutorName: appointment.tutor ? appointment.tutor.name : 'Tutor',
+                course: appointment.course,
+                start: appointment.start,
+                end: appointment.end
+            }).catch((error) => console.error('Cancellation email error:', error));
+        }
+
         await AuditLog.create({
             actor: req.user.id,
             action: 'cancel',

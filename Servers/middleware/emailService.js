@@ -100,4 +100,46 @@ async function sendCancellationConfirmation({ studentEmail, studentName, tutorNa
     console.log('Cancellation confirmation emails sent.');
 }
 
-module.exports = { sendBookingConfirmation, sendCancellationConfirmation };
+async function sendAppointmentReminder({ studentEmail, studentName, tutorName, course, start, end }) {
+    const startStr = new Date(start).toLocaleString('en-US', { hour12: true });
+    const endStr = new Date(end).toLocaleString('en-US', { hour12: true });
+    const transport = await getTransporter();
+
+    await transport.sendMail({
+        from: `"IT Learning Center" <${process.env.GMAIL_ADMIN}>`,
+        to: studentEmail,
+        subject: 'Appointment Reminder - IT Learning Center',
+        html: `
+            <h2>Upcoming Appointment Reminder</h2>
+            <p>Hi ${studentName},</p>
+            <p>This is a reminder for your upcoming tutoring appointment:</p>
+            <ul>
+                <li><strong>Tutor:</strong> ${tutorName}</li>
+                <li><strong>Course:</strong> ${course}</li>
+                <li><strong>Start:</strong> ${startStr}</li>
+                <li><strong>End:</strong> ${endStr}</li>
+            </ul>
+            <p>- IT Learning Center</p>
+        `
+    });
+
+    await transport.sendMail({
+        from: `"IT Learning Center" <${process.env.GMAIL_ADMIN}>`,
+        to: process.env.GMAIL_ADMIN,
+        subject: 'Appointment Reminder Sent - IT Learning Center',
+        html: `
+            <h2>Appointment Reminder Sent</h2>
+            <ul>
+                <li><strong>Student:</strong> ${studentName} (${studentEmail})</li>
+                <li><strong>Tutor:</strong> ${tutorName}</li>
+                <li><strong>Course:</strong> ${course}</li>
+                <li><strong>Start:</strong> ${startStr}</li>
+                <li><strong>End:</strong> ${endStr}</li>
+            </ul>
+        `
+    });
+
+    console.log('Appointment reminder emails sent.');
+}
+
+module.exports = { sendBookingConfirmation, sendCancellationConfirmation, sendAppointmentReminder };

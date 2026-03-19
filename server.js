@@ -14,6 +14,9 @@ const adminRoutes = require('./Servers/Routes/adminRoutes');
 const studentRoutes = require('./Servers/routes/studentRoutes');
 const tutorRoutes = require('./Servers/routes/tutorRoutes');
 const User = require('./Servers/Model/User');
+const Appointment = require('./Servers/Model/Appointment');
+const NotificationLog = require('./Servers/Model/NotificationLog');
+const { sendAppointmentReminder } = require('./Servers/middleware/emailService');
 
 
 app.use(express.urlencoded({extended: true}));
@@ -82,10 +85,90 @@ async function ensureSeedUsers() {
     }
 }
 
+async function sendUpcomingAppointmentReminders() {
+    const now = new Date();
+    const windowEnd = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+
+    const upcomingAppointments = await Appointment.find({
+        status: 'booked',
+        start: { $gt: now, $lte: windowEnd }
+    })
+        .populate('student', 'name email')
+        .populate('tutor', 'name email');
+
+    for (const appointment of upcomingAppointments) {
+        if (!appointment.student || !appointment.student.email) {
+            continue;
+        }
+
+        const alreadySent = await NotificationLog.findOne({
+            event: 'reminder',
+            recipient: appointment.student.email.toLowerCase(),
+            status: 'sent',
+            'providerResponse.appointmentId': String(appointment._id)
+        }).select('_id');
+
+        if (alreadySent) {
+            continue;
+        }
+
+        try {
+            await sendAppointmentReminder({
+                studentEmail: appointment.student.email,
+                studentName: appointment.student.name || 'Student',
+                tutorName: appointment.tutor ? appointment.tutor.name : 'Tutor',
+                course: appointment.course,
+                start: appointment.start,
+                end: appointment.end
+            });
+
+            await NotificationLog.create({
+                channel: 'email',
+                event: 'reminder',
+                recipient: appointment.student.email.toLowerCase(),
+                status: 'sent',
+                providerResponse: {
+                    appointmentId: String(appointment._id),
+                    reminderWindowHours: 24
+                }
+            });
+        } catch (error) {
+            console.error('Failed to send reminder for appointment', appointment._id, error.message);
+
+            await NotificationLog.create({
+                channel: 'email',
+                event: 'reminder',
+                recipient: appointment.student.email.toLowerCase(),
+                status: 'failed',
+                providerResponse: {
+                    appointmentId: String(appointment._id),
+                    error: error.message
+                }
+            });
+        }
+    }
+}
+
+function startReminderWorker() {
+    const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+    // Run immediately at startup, then continue on a fixed interval.
+    sendUpcomingAppointmentReminders().catch((error) => {
+        console.error('Initial reminder run failed:', error.message);
+    });
+
+    setInterval(() => {
+        sendUpcomingAppointmentReminders().catch((error) => {
+            console.error('Scheduled reminder run failed:', error.message);
+        });
+    }, FIFTEEN_MINUTES);
+}
+
 async function startServer() {
     try {
         await connectDB();
         await ensureSeedUsers();
+        startReminderWorker();
         app.listen(PORT, () => {
             console.log('Server running on port', PORT);
         });

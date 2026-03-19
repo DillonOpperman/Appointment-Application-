@@ -16,8 +16,8 @@ async function getTransporter() {
 }
 
 async function sendBookingConfirmation({ studentEmail, studentName, tutorName, course, start, end }) {
-    const startStr = new Date(start).toLocaleString();
-    const endStr = new Date(end).toLocaleString();
+    const startStr = new Date(start).toLocaleString('en-US', { hour12: true });
+    const endStr = new Date(end).toLocaleString('en-US', { hour12: true });
     const transport = await getTransporter();
 
     await transport.sendMail({
@@ -59,8 +59,8 @@ async function sendBookingConfirmation({ studentEmail, studentName, tutorName, c
 }
 
 async function sendCancellationConfirmation({ studentEmail, studentName, tutorName, course, start, end }) {
-    const startStr = new Date(start).toLocaleString();
-    const endStr = new Date(end).toLocaleString();
+    const startStr = new Date(start).toLocaleString('en-US', { hour12: true });
+    const endStr = new Date(end).toLocaleString('en-US', { hour12: true });
     const transport = await getTransporter();
 
     await transport.sendMail({

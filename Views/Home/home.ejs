@@ -302,8 +302,8 @@
                                     <small class="text-muted"><%= slot.tutorEmail %></small>
                                 </td>
                                 <td><%= slot.course %></td>
-                                <td><%= new Date(slot.start).toLocaleString() %></td>
-                                <td><%= new Date(slot.end).toLocaleString() %></td>
+                                <td><%= new Date(slot.start).toLocaleString('en-US', { hour12: true }) %></td>
+                                <td><%= new Date(slot.end).toLocaleString('en-US', { hour12: true }) %></td>
                                 <td>
                                     <form class="book-form" action="/studentLogin" method="GET">
                                         <input type="hidden" name="tutorId" value="<%= slot.tutorId %>">

@@ -7,6 +7,11 @@ const availabilityBlockSchema = new mongoose.Schema(
             ref: 'User',
             required: true
         },
+        tutorName: {
+            type: String,
+            required: true,
+            trim: true
+        },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',

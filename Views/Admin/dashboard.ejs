@@ -71,8 +71,8 @@
                             <td><%= appt.student ? appt.student.name : 'N/A' %></td>
                             <td><%= appt.tutor ? appt.tutor.name : 'N/A' %></td>
                             <td><%= appt.course %></td>
-                            <td><%= new Date(appt.start).toLocaleString() %></td>
-                            <td><%= new Date(appt.end).toLocaleString() %></td>
+                            <td><%= new Date(appt.start).toLocaleString('en-US', { hour12: true }) %></td>
+                            <td><%= new Date(appt.end).toLocaleString('en-US', { hour12: true }) %></td>
                             <td>
                                 <span class="badge badge-<%= appt.status %>">
                                     <%= appt.status %>
@@ -164,7 +164,7 @@
                     <tbody>
                         <% safeAvailabilityBlocks.forEach(function(block) { %>
                             <tr>
-                                <td><%= block.tutor ? block.tutor.name : 'N/A' %></td>
+                                <td><%= (block.tutor && block.tutor.name) ? block.tutor.name : (block.tutorName || 'N/A') %></td>
                                 <td><%= block.isException ? 'Date Specific' : 'Weekly' %></td>
                                 <td><%= block.course || 'IT 330' %></td>
                                 <td>

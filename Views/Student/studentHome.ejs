@@ -31,6 +31,17 @@
         <p>Start Time: <input type="datetime-local" name="scheduledStart"> Book for 1 hour</p>
         <button type="submit">Make Appointment</button>
     </form>
+    <p>Cancel Appointment</p>
+    <form action="/studentCancelAppointment" method="POST">
+         <select name="appointment" required>
+                <% appointments.forEach(function(appointment) { %>
+                    <option value="<%= appointment._id %>">
+                        <%= appointment._id %>
+                    </option>
+                    <% }); %>
+            </select>
+            <button type="submit">Cancel this appointment</button>
+    </form>
 </body>
 
 </html>

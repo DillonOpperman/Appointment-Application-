@@ -146,10 +146,12 @@ exports.showHome = async (req, res) => {
 
     try {
         tutors = await getTutors();
+        appointments = await Appointment.find()
         students = await User.find({ role: "student" });
         res.render("Student/studentHome", {
             tutors: tutors,
-            students: students
+            students: students,
+            appointments: appointments
         });
 
     } catch (err) {
@@ -175,6 +177,19 @@ exports.createAppointment = async (req, res) => {
         res.redirect("/studentHome");
 
     } catch (err) {
+        console.error(err);
+        res.send("Error creating appointment");
+    }
+};
+exports.cancelAppointment = async (req, res) => {
+    try {
+        id = req.body.appointment
+        await Appointment.findByIdAndUpdate(id, {
+            status: "cancelled"
+        });
+        res.redirect("/studentHome");
+    }
+    catch (err) {
         console.error(err);
         res.send("Error creating appointment");
     }

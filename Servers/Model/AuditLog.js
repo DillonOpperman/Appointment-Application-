@@ -12,6 +12,11 @@ const auditLogSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        actorName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         targetType: {
             type: String,
             required: true,

@@ -36,7 +36,7 @@ exports.submitLogin = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: tutor._id, email: tutor.email, role: tutor.role },
+              { id: tutor._id, name: tutor.name, email: tutor.email, role: tutor.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -101,16 +101,23 @@ exports.cancelAppointment = async (req, res) => {
                 tutorName: appointment.tutor ? appointment.tutor.name : 'Tutor',
                 course: appointment.course,
                 start: appointment.start,
-                end: appointment.end
+                end: appointment.end,
+                appointmentId: appointment._id
             }).catch((error) => console.error('Cancellation email error:', error));
         }
 
         await AuditLog.create({
             actor: tutor._id,
             action: 'cancel',
+                actorName: tutor.name || '',
             targetType: 'Appointment',
             targetId: appointment._id,
-            metadata: { cancelledBy: 'tutor' }
+            metadata: {
+                cancelledBy: 'tutor',
+                studentName: appointment.student ? appointment.student.name : null,
+                tutorName: appointment.tutor ? appointment.tutor.name : tutor.name,
+                course: appointment.course
+            }
         });
 
         return res.redirect('/tutorDashboard');
@@ -130,7 +137,9 @@ exports.updateSession = async (req, res) => {
         const appointment = await Appointment.findOne({
             _id: req.params.id,
             tutor: tutor._id
-        });
+        })
+            .populate('student', 'name email')
+            .populate('tutor', 'name email');
 
         if (!appointment) {
             return res.redirect('/tutorDashboard?error=not_found');
@@ -157,9 +166,16 @@ exports.updateSession = async (req, res) => {
         await AuditLog.create({
             actor: tutor._id,
             action: 'updateSession',
+                actorName: tutor.name || '',
             targetType: 'Appointment',
             targetId: appointment._id,
-            metadata: { attendance, hasComment: !!(commentText && commentText.trim()) }
+            metadata: {
+                attendance,
+                hasComment: !!(commentText && commentText.trim()),
+                studentName: appointment.student ? appointment.student.name : null,
+                tutorName: appointment.tutor ? appointment.tutor.name : tutor.name,
+                course: appointment.course
+            }
         });
 
         return res.redirect('/tutorDashboard?success=1');

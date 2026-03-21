@@ -1,5 +1,6 @@
 const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
+const AuditLog = require('../Model/AuditLog');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
@@ -82,7 +83,7 @@ async function authenticateOrCreateStudent(studentEmail, studentPassword) {
 }
 
 async function createAppointmentForSlot({ tutorId, course, start, end, student }) {
-    const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id');
+    const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id name');
     if (!tutor) {
         return { errorCode: 'invalid_tutor' };
     }
@@ -106,24 +107,27 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
 
     const appointment = await Appointment.create({
         student: student._id,
+        studentName: student.name || '',
         tutor: tutor._id,
+        tutorName: tutor.name || '',
         course: (course || 'IT 330').trim() || 'IT 330',
         start: startDate,
         end: endDate,
         status: 'booked'
     });
     
-    const tutorUser = await User.findById(tutor._id).select('name');
+    const tutorUser = tutor;
     sendBookingConfirmation({
         studentEmail: student.email,
         studentName: student.name,
         tutorName: tutorUser ? tutorUser.name : 'Your Tutor',
         course: appointment.course,
         start: appointment.start,
-        end: appointment.end
+        end: appointment.end,
+        appointmentId: appointment._id
     }).catch(err => console.error('Booking email error:', err));
     
-    return { ok: true };
+    return { ok: true, appointment, tutorUser };
 }
 
 exports.showLogin = (req, res) => {
@@ -272,7 +276,7 @@ exports.submitLogin = async (req, res) => {
 
         const jwt = require('jsonwebtoken');
         const token = jwt.sign(
-    { id: authResult.student._id, email: authResult.student.email, role: 'student' },
+     { id: authResult.student._id, name: authResult.student.name, email: authResult.student.email, role: 'student' },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
             );
@@ -293,6 +297,19 @@ exports.submitLogin = async (req, res) => {
         if (bookingResult.errorCode) {
             return res.redirect(`/studentDashboard?error=${bookingResult.errorCode}`);
         }
+
+        await AuditLog.create({
+            actor: authResult.student._id,
+            action: 'book',
+                actorName: authResult.student.name || '',
+            targetType: 'Appointment',
+            targetId: bookingResult.appointment._id,
+            metadata: {
+                studentName: authResult.student.name,
+                tutorName: bookingResult.tutorUser ? bookingResult.tutorUser.name : null,
+                course: bookingResult.appointment.course
+            }
+        });
 
         return res.redirect('/studentDashboard?booked=1');
     } catch (error) {
@@ -431,8 +448,23 @@ exports.cancelAppointment = async (req, res) => {
             tutorName: appointment.tutor ? appointment.tutor.name : 'Your Tutor',
             course: appointment.course,
             start: appointment.start,
-            end: appointment.end
+            end: appointment.end,
+            appointmentId: appointment._id
         }).catch(err => console.error('Cancellation email error:', err));
+
+        await AuditLog.create({
+            actor: student._id,
+            action: 'cancel',
+                actorName: student.name || '',
+            targetType: 'Appointment',
+            targetId: appointment._id,
+            metadata: {
+                cancelledBy: 'student',
+                studentName: student.name,
+                tutorName: appointment.tutor ? appointment.tutor.name : null,
+                course: appointment.course
+            }
+        });
 
         return res.redirect('/studentDashboard?cancelled=1');
     } catch (error) {
@@ -456,6 +488,19 @@ exports.bookAppointment = async (req, res) => {
         if (bookingResult.errorCode) {
             return res.redirect(`/studentDashboard?error=${bookingResult.errorCode}`);
         }
+
+        await AuditLog.create({
+            actor: student._id,
+            action: 'book',
+                actorName: student.name || '',
+            targetType: 'Appointment',
+            targetId: bookingResult.appointment._id,
+            metadata: {
+                studentName: student.name,
+                tutorName: bookingResult.tutorUser ? bookingResult.tutorUser.name : null,
+                course: bookingResult.appointment.course
+            }
+        });
 
         return res.redirect('/studentDashboard?booked=1');
     } catch (error) {

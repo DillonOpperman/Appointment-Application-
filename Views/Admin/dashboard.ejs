@@ -1,13 +1,15 @@
 <%- include("../Includes/_header") %>
 
 <%
-    const selectedTab = (typeof activeTab !== 'undefined' && ['appointments', 'hours', 'users'].includes(activeTab))
+    const selectedTab = (typeof activeTab !== 'undefined' && ['appointments', 'hours', 'users', 'logs'].includes(activeTab))
         ? activeTab
         : 'appointments';
     const safeAppointments = Array.isArray(appointments) ? appointments : [];
     const safeTutors = Array.isArray(tutors) ? tutors : [];
     const safeAvailabilityBlocks = Array.isArray(availabilityBlocks) ? availabilityBlocks : [];
     const safeUsers = Array.isArray(users) ? users : [];
+    const safeAuditLogs = Array.isArray(auditLogs) ? auditLogs : [];
+    const safeNotificationLogs = Array.isArray(notificationLogs) ? notificationLogs : [];
 %>
 
 <div class="dashboardLayout">
@@ -17,12 +19,18 @@
         <button onclick="openTab('appointments')">Appointments</button>
         <button onclick="openTab('hours')">Manage Hours</button>
         <button onclick="openTab('users')">Manage Users</button>
+        <button onclick="openTab('logs')">Activity Logs</button>
         <a href="/logout">Logout</a>
     </div>
 
     <div class="mainContent">
 
         <div id="appointments" class="tabContent <%= selectedTab === 'appointments' ? 'activeTab' : '' %>">
+            <% if (typeof notice !== 'undefined' && notice && selectedTab === 'appointments') { %>
+                <div class="alert alert-<%= noticeType === 'warning' ? 'warning' : noticeType === 'danger' ? 'danger' : 'success' %>" role="alert" style="margin-bottom:16px;">
+                    <%= notice %>
+                </div>
+            <% } %>
             <div class="apptFilterBar">
                 <h2>View & Cancel Appointments</h2>
                 <div class="apptFilters">
@@ -103,6 +111,12 @@
 
         <div id="hours" class="tabContent <%= selectedTab === 'hours' ? 'activeTab' : '' %>">
             <h2>Tutoring Hours & Availability</h2>
+
+            <% if (typeof notice !== 'undefined' && notice && selectedTab === 'hours') { %>
+                <div class="alert alert-<%= noticeType === 'warning' ? 'warning' : noticeType === 'danger' ? 'danger' : 'success' %>" role="alert" style="margin-bottom:16px;">
+                    <%= notice %>
+                </div>
+            <% } %>
 
             <div class="addUserForm">
                 <h3>Add Availability Block</h3>
@@ -191,6 +205,12 @@
 
         <div id="users" class="tabContent <%= selectedTab === 'users' ? 'activeTab' : '' %>">
             <h2>Manage Tutors & Students</h2>
+
+            <% if (typeof notice !== 'undefined' && notice && selectedTab === 'users') { %>
+                <div class="alert alert-<%= noticeType === 'warning' ? 'warning' : noticeType === 'danger' ? 'danger' : 'success' %>" role="alert" style="margin-bottom:16px;">
+                    <%= notice %>
+                </div>
+            <% } %>
             
             <div class="addUserForm">
                 <h3>Add New User</h3>
@@ -244,6 +264,73 @@
                     </tbody>
                 </table>
             <% } %>
+        </div>
+
+        <div id="logs" class="tabContent <%= selectedTab === 'logs' ? 'activeTab' : '' %>">
+            <h2>Audit & Notification Logs</h2>
+
+            <div class="addUserForm" style="margin-bottom:24px;">
+                <h3>Audit Log</h3>
+                <% if (safeAuditLogs.length === 0) { %>
+                    <div class="emptyState">No audit log entries found.</div>
+                <% } else { %>
+                    <table class="apptTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Actor</th>
+                                <th>Action</th>
+                                <th>Target</th>
+                                <th>Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% safeAuditLogs.forEach(function(log) { %>
+                                <tr>
+                                    <td><%= new Date(log.createdAt).toLocaleString('en-US', { hour12: true }) %></td>
+                                    <td><%= log.actorDisplayName %></td>
+                                    <td><%= log.action %></td>
+                                    <td><%= log.targetLabel %></td>
+                                    <td><%= log.summary %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+
+            <div class="addUserForm">
+                <h3>Notification Log</h3>
+                <% if (safeNotificationLogs.length === 0) { %>
+                    <div class="emptyState">No notification log entries found.</div>
+                <% } else { %>
+                    <table class="apptTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Event</th>
+                                <th>Recipient</th>
+                                <th>Status</th>
+                                <th>Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% safeNotificationLogs.forEach(function(log) { %>
+                                <% const notificationBadgeClass = log.status === 'sent' ? 'badge-completed' : (log.status === 'failed' ? 'badge-cancelled' : 'badge-booked'); %>
+                                <tr>
+                                    <td><%= new Date(log.createdAt).toLocaleString('en-US', { hour12: true }) %></td>
+                                    <td><%= log.event %></td>
+                                    <td><%= log.recipientDisplayName %><br><small><%= log.recipient %></small></td>
+                                    <td>
+                                        <span class="badge <%= notificationBadgeClass %>"><%= log.status %></span>
+                                    </td>
+                                    <td><%= log.summary %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
         </div>
 
     </div>

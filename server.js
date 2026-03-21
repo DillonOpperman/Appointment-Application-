@@ -5,6 +5,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 
@@ -22,6 +23,38 @@ const { sendAppointmentReminder } = require('./Servers/middleware/emailService')
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 
+app.use((req, res, next) => {
+    res.locals.currentUser = null;
+
+    const cookieHeader = req.headers.cookie || '';
+    const authCookie = cookieHeader
+        .split(';')
+        .map((entry) => entry.trim())
+        .find((entry) => entry.startsWith('auth_token='));
+
+    if (!authCookie) {
+        return next();
+    }
+
+    const token = decodeURIComponent(authCookie.substring('auth_token='.length));
+    if (!token) {
+        return next();
+    }
+
+    try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        res.locals.currentUser = {
+            id: payload.id,
+            email: payload.email,
+            role: payload.role
+        };
+    } catch (error) {
+        res.locals.currentUser = null;
+    }
+
+    return next();
+});
+
 const PORT = process.env.PORT || 3001
 
 // View engine for EJS
@@ -36,6 +69,11 @@ app.use('/api/auth', authRoutes);
 app.use('/', adminRoutes);
 app.use('/', studentRoutes);
 app.use('/', tutorRoutes);
+
+app.get('/logout', (req, res) => {
+    res.setHeader('Set-Cookie', 'auth_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+    return res.redirect('/home');
+});
 
 app.get('/', (req, res) => {
  res.redirect('/home');
@@ -119,32 +157,11 @@ async function sendUpcomingAppointmentReminders() {
                 tutorName: appointment.tutor ? appointment.tutor.name : 'Tutor',
                 course: appointment.course,
                 start: appointment.start,
-                end: appointment.end
-            });
-
-            await NotificationLog.create({
-                channel: 'email',
-                event: 'reminder',
-                recipient: appointment.student.email.toLowerCase(),
-                status: 'sent',
-                providerResponse: {
-                    appointmentId: String(appointment._id),
-                    reminderWindowHours: 24
-                }
+                end: appointment.end,
+                appointmentId: appointment._id
             });
         } catch (error) {
             console.error('Failed to send reminder for appointment', appointment._id, error.message);
-
-            await NotificationLog.create({
-                channel: 'email',
-                event: 'reminder',
-                recipient: appointment.student.email.toLowerCase(),
-                status: 'failed',
-                providerResponse: {
-                    appointmentId: String(appointment._id),
-                    error: error.message
-                }
-            });
         }
     }
 }

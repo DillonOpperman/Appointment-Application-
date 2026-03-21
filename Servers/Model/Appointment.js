@@ -31,6 +31,16 @@ const appointmentSchema = new mongoose.Schema(
             ref: 'User',
             required: true
         },
+        studentName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        tutorName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         course: {
             type: String,
             required: true,

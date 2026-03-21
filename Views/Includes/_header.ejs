@@ -6,11 +6,38 @@
     </head>
     <body>
 
+        <%
+            const headerUser = (typeof currentUser !== 'undefined' && currentUser)
+                ? currentUser
+                : ((typeof user !== 'undefined' && user) ? user : null);
+            const headerRole = headerUser && headerUser.role ? String(headerUser.role).toLowerCase() : '';
+            const isAdminDashboardContext = typeof activeTab !== 'undefined';
+            const showAuthenticatedNav = Boolean(headerUser) || isAdminDashboardContext;
+            let dashboardPath = '/home';
+            if (headerRole === 'admin') dashboardPath = '/adminDashboard';
+            if (headerRole === 'student') dashboardPath = '/studentDashboard';
+            if (headerRole === 'tutor') dashboardPath = '/tutorDashboard';
+            if (!headerRole && isAdminDashboardContext) dashboardPath = '/adminDashboard';
+        %>
+
         <header class="staticHeader">
             <h1>IT Learning Center</h1>
             <nav class="staticNavBar">
                 <a href="/home">home</a>
-                <a href="/adminDashboard">Dashboard</a>
-                <a href="/adminLogin">Admin Login</a>
+                <% if (showAuthenticatedNav) { %>
+                    <a href="<%= dashboardPath %>">Dashboard</a>
+                    <a href="/logout">Logout</a>
+                <% } else { %>
+                    <a href="/adminLogin">Sign in as Admin</a>
+                <% } %>
             </nav>
+            <% if (headerUser || isAdminDashboardContext) { %>
+                <div style="margin-top:6px;font-size:0.92rem;color:#222;">
+                    <% if (headerUser) { %>
+                        Signed in as <strong><%= headerRole %></strong> (<%= headerUser.email %>)
+                    <% } else { %>
+                        Signed in as <strong>admin</strong>
+                    <% } %>
+                </div>
+            <% } %>
         </header>

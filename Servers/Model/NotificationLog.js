@@ -17,6 +17,11 @@ const notificationLogSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        recipientName: {
+            type: String,
+            trim: true,
+            default: ''
+        },
         status: {
             type: String,
             enum: ['queued', 'sent', 'failed'],

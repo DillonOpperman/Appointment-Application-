@@ -1,145 +1,11 @@
 const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const AuditLog = require('../Model/AuditLog');
-const NotificationLog = require('../Model/NotificationLog');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const NotificationLog = require('../Model/NotificationLog');
 const { sendCancellationConfirmation } = require('../middleware/emailService');
-
-function formatDateTime(value) {
-    if (!value) {
-        return 'N/A';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return 'N/A';
-    }
-
-    return parsed.toLocaleString('en-US', { hour12: true });
-}
-
-function formatAvailabilityLabel(block) {
-    if (!block) {
-        return 'Unknown availability block';
-    }
-
-    const tutorName = block.tutor && block.tutor.name ? block.tutor.name : (block.tutorName || 'Unknown tutor');
-    const dayOrDate = block.isException && block.date
-        ? new Date(block.date).toLocaleDateString('en-US')
-        : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][block.dayOfWeek] || 'Unscheduled';
-
-    return `${tutorName} - ${block.course || 'IT 330'} - ${dayOrDate} ${block.startTime || ''} to ${block.endTime || ''}`.trim();
-}
-
-function formatAppointmentLabel(appointment) {
-    if (!appointment) {
-        return 'Unknown appointment';
-    }
-
-    const studentName = appointment.student && appointment.student.name ? appointment.student.name : 'Unknown student';
-    const tutorName = appointment.tutor && appointment.tutor.name ? appointment.tutor.name : 'Unknown tutor';
-    return `${studentName} with ${tutorName} for ${appointment.course || 'IT 330'} on ${formatDateTime(appointment.start)}`;
-}
-
-function summarizeAuditLog(log, targetLabel) {
-    const metadata = log.metadata || {};
-
-    switch (log.action) {
-    case 'book':
-        return `Booked ${targetLabel}`;
-    case 'cancel':
-        return `Cancelled ${targetLabel}`;
-    case 'edit':
-        return `Updated appointment window to ${formatDateTime(metadata.newStart)} - ${formatDateTime(metadata.newEnd)}`;
-    case 'activate':
-        return `Activated ${targetLabel}`;
-    case 'deactivate':
-        return `Deactivated ${targetLabel}`;
-    case 'createUser':
-        return `Created user ${metadata.userName || targetLabel}`;
-    case 'addAvailability':
-        return `Added availability for ${metadata.tutorName || targetLabel}`;
-    case 'deleteAvailability':
-        return `Deleted availability for ${metadata.tutorName || targetLabel}`;
-    case 'updateSession':
-        if (metadata.attendance === 'show') {
-            return `Marked session completed${metadata.hasComment ? ' and added notes' : ''}`;
-        }
-        if (metadata.attendance === 'noshow') {
-            return `Marked student as no-show${metadata.hasComment ? ' and added notes' : ''}`;
-        }
-        return metadata.hasComment ? 'Added session notes' : 'Updated tutoring session';
-    default:
-        return metadata.summary || targetLabel || String(log.targetId || 'Unknown target');
-    }
-}
-
-function summarizeNotificationLog(log) {
-    const details = log.providerResponse || {};
-    const studentName = details.studentName || 'Unknown student';
-    const tutorName = details.tutorName || 'Unknown tutor';
-    const course = details.course || 'IT 330';
-    const actionMap = {
-        book: 'Booking confirmation',
-        cancel: 'Cancellation notice',
-        reminder: 'Reminder notice',
-        other: 'Notification'
-    };
-    return details.summary || `${actionMap[log.event] || 'Notification'} for ${studentName} and ${tutorName} (${course})`;
-}
-
-async function buildAuditLogEntries(rawLogs) {
-    const appointmentIds = [];
-    const userIds = [];
-    const availabilityIds = [];
-
-    rawLogs.forEach((log) => {
-        if (log.targetType === 'Appointment') appointmentIds.push(log.targetId);
-        if (log.targetType === 'User') userIds.push(log.targetId);
-        if (log.targetType === 'AvailabilityBlock') availabilityIds.push(log.targetId);
-    });
-
-    const [appointments, users, availabilityBlocks] = await Promise.all([
-        appointmentIds.length
-            ? Appointment.find({ _id: { $in: appointmentIds } })
-                .populate('student', 'name email')
-                .populate('tutor', 'name email')
-            : [],
-        userIds.length
-            ? User.find({ _id: { $in: userIds } }).select('name email role active')
-            : [],
-        availabilityIds.length
-            ? AvailabilityBlock.find({ _id: { $in: availabilityIds } })
-                .populate('tutor', 'name email')
-            : []
-    ]);
-
-    const appointmentMap = new Map(appointments.map((item) => [String(item._id), item]));
-    const userMap = new Map(users.map((item) => [String(item._id), item]));
-    const availabilityMap = new Map(availabilityBlocks.map((item) => [String(item._id), item]));
-
-    return rawLogs.map((log) => {
-        let targetLabel = 'Unknown target';
-
-        if (log.targetType === 'Appointment') {
-            targetLabel = formatAppointmentLabel(appointmentMap.get(String(log.targetId)));
-        } else if (log.targetType === 'User') {
-            const user = userMap.get(String(log.targetId));
-            targetLabel = user ? `${user.name} (${user.role})` : (log.metadata.userName || 'Unknown user');
-        } else if (log.targetType === 'AvailabilityBlock') {
-            targetLabel = formatAvailabilityLabel(availabilityMap.get(String(log.targetId)));
-        }
-
-        return {
-            ...log.toObject(),
-            actorDisplayName: log.actor && log.actor.name ? `${log.actor.name} (${log.actor.role})` : 'Unknown user',
-            targetLabel,
-            summary: summarizeAuditLog(log, targetLabel)
-        };
-    });
-}
 
 function parseTimeToMinutes(timeValue) {
     const raw = String(timeValue || '').trim();
@@ -259,7 +125,7 @@ exports.submitLogin = async (req, res) => {
         }
 
         const token = jwt.sign(
-              { id: admin._id, name: admin.name, email: admin.email, role: admin.role },
+            { id: admin._id, email: admin.email, role: admin.role },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -290,39 +156,18 @@ exports.showDashboard = async (req, res) => {
             .populate('createdBy', 'name email')
             .sort({ createdAt: -1 });
 
-        const rawAuditLogs = await AuditLog.find()
-            .populate('actor', 'name email role')
+            const auditLogs = await AuditLog.find()
+            .populate('actor', 'name email') 
             .sort({ createdAt: -1 })
-            .limit(25);
+            .limit(20);
 
-        const notificationLogs = await NotificationLog.find()
-            .sort({ createdAt: -1 })
-            .limit(25);
-
-        const auditLogs = await buildAuditLogEntries(rawAuditLogs);
+           
+const notificationLogs = await NotificationLog.find().sort({ createdAt: -1 }).limit(20);
 
         const validTabs = ['appointments', 'hours', 'users', 'logs'];
         const activeTab = validTabs.includes(req.query.tab) ? req.query.tab : 'appointments';
-        const validNoticeTypes = ['success', 'warning', 'danger'];
-        const notice = typeof req.query.notice === 'string' ? req.query.notice : null;
-        const noticeType = validNoticeTypes.includes(req.query.noticeType) ? req.query.noticeType : 'success';
 
-        res.render('Admin/dashboard', {
-            appointments,
-            users,
-            tutors,
-            availabilityBlocks,
-            auditLogs,
-            notificationLogs: notificationLogs.map((log) => ({
-                ...log.toObject(),
-                recipientDisplayName: log.recipientName || log.recipient,
-                summary: summarizeNotificationLog(log)
-            })),
-            activeTab,
-            notice,
-            noticeType,
-            currentUser: req.user || null
-        });
+        res.render('Admin/dashboard', { appointments, users, tutors, availabilityBlocks, activeTab, auditLogs, notificationLogs });
     } catch (err) {
         console.error(err);
         res.status(500).send('Error loading dashboard');
@@ -338,34 +183,17 @@ exports.editAppointment = async (req, res) => {
         if (isNaN(startDate) || isNaN(endDate)) return res.status(400).send('Invalid date/time values.');
         if (endDate <= startDate) return res.status(400).send('End time must be after start time.');
 
-        const updatedAppointment = await Appointment.findByIdAndUpdate(
-            req.params.id,
-            { start: startDate, end: endDate },
-            { new: true }
-        )
-            .populate('student', 'name email')
-            .populate('tutor', 'name email');
+        await Appointment.findByIdAndUpdate(req.params.id, { start: startDate, end: endDate });
 
         await AuditLog.create({
             actor: req.user.id,
             action: 'edit',
-                actorName: req.user.name || req.user.email || 'Admin',
             targetType: 'Appointment',
             targetId: req.params.id,
-            metadata: {
-                editedBy: 'admin',
-                newStart: startDate,
-                newEnd: endDate,
-                studentName: updatedAppointment && updatedAppointment.student ? updatedAppointment.student.name : null,
-                tutorName: updatedAppointment && updatedAppointment.tutor ? updatedAppointment.tutor.name : null,
-                course: updatedAppointment ? updatedAppointment.course : null
-            }
+            metadata: { editedBy: 'admin', newStart: startDate, newEnd: endDate }
         });
 
-        const studentName = updatedAppointment && updatedAppointment.student ? updatedAppointment.student.name : 'Student';
-        const tutorName = updatedAppointment && updatedAppointment.tutor ? updatedAppointment.tutor.name : 'Tutor';
-        const noticeMsg = `Rescheduled ${studentName} with ${tutorName}.`;
-        res.redirect(`/adminDashboard?tab=appointments&noticeType=success&notice=${encodeURIComponent(noticeMsg)}`);
+        res.redirect('/adminDashboard');
     } catch (err) {
         console.error(err);
         res.status(500).send('Error editing appointment');
@@ -390,30 +218,22 @@ exports.editAppointment = async (req, res) => {
                 tutorName: appointment.tutor ? appointment.tutor.name : 'Tutor',
                 course: appointment.course,
                 start: appointment.start,
-                end: appointment.end,
-                appointmentId: appointment._id
+                end: appointment.end
             }).catch((error) => console.error('Cancellation email error:', error));
         }
 
         await AuditLog.create({
             actor: req.user.id,
             action: 'cancel',
-                actorName: req.user.name || req.user.email || 'Admin',
             targetType: 'Appointment',
             targetId: appointment._id,
             metadata: {
                 cancelledBy: 'admin',
                 studentEmail: appointment.student ? appointment.student.email : null,
-                tutorEmail: appointment.tutor ? appointment.tutor.email : null,
-                studentName: appointment.student ? appointment.student.name : null,
-                tutorName: appointment.tutor ? appointment.tutor.name : null,
-                course: appointment.course
+                tutorEmail: appointment.tutor ? appointment.tutor.email : null
             }
         });
-        const studentName = appointment.student ? appointment.student.name : 'Student';
-        const tutorName = appointment.tutor ? appointment.tutor.name : 'Tutor';
-        const noticeMsg = `Cancelled ${studentName}'s appointment with ${tutorName}.`;
-        res.redirect(`/adminDashboard?tab=appointments&noticeType=warning&notice=${encodeURIComponent(noticeMsg)}`);
+        res.redirect('/adminDashboard');
     } catch (err) {
         console.error(err);
         res.status(500).send('Error cancelling appointment');
@@ -423,36 +243,16 @@ exports.editAppointment = async (req, res) => {
 exports.addUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        const normalizedEmail = String(email || '').toLowerCase().trim();
-        const normalizedName = String(name || '').trim();
-
-        if (!normalizedName || !normalizedEmail || !password || !role) {
-            return res.redirect('/adminDashboard?tab=users&noticeType=danger&notice=All%20user%20fields%20are%20required.');
-        }
-
-        const existing = await User.findOne({ email: normalizedEmail });
+        const existing = await User.findOne({ email: email.toLowerCase() });
         if (existing) {
-            return res.redirect('/adminDashboard?tab=users&noticeType=warning&notice=User%20with%20that%20email%20already%20exists.');
+            return res.status(409).send('User with that email already exists.');
         }
-
         const passwordHash = await bcrypt.hash(password, 12);
-        const createdUser = await User.create({ name: normalizedName, email: normalizedEmail, role, passwordHash, active: true });
-        await AuditLog.create({
-            actor: req.user.id,
-            action: 'createUser',
-                actorName: req.user.name || req.user.email || 'Admin',
-            targetType: 'User',
-            targetId: createdUser._id,
-            metadata: {
-                userName: createdUser.name,
-                userEmail: createdUser.email,
-                userRole: createdUser.role
-            }
-        });
-        res.redirect(`/adminDashboard?tab=users&noticeType=success&notice=${encodeURIComponent(`Added ${createdUser.name} as ${createdUser.role}.`)}`);
+        await User.create({ name, email, role, passwordHash, active: true });
+        res.redirect('/adminDashboard');
     } catch (err) {
         console.error(err);
-        res.redirect('/adminDashboard?tab=users&noticeType=danger&notice=Error%20adding%20user.');
+        res.status(500).send('Error adding user');
     }
 };
 
@@ -464,12 +264,11 @@ exports.toggleUserActive = async (req, res) => {
         await AuditLog.create({
             actor: req.user.id,
             action: user.active ? 'activate' : 'deactivate',
-                actorName: req.user.name || req.user.email || 'Admin',
             targetType: 'User',
             targetId: user._id,
-            metadata: { updatedBy: 'admin', userName: user.name, userEmail: user.email, userRole: user.role }
+            metadata: { updatedBy: 'admin' }
         });
-        res.redirect(`/adminDashboard?tab=users&noticeType=success&notice=${encodeURIComponent(`${user.name} is now ${user.active ? 'active' : 'inactive'}.`)}`);
+        res.redirect('/adminDashboard');
     } catch (err) {
         console.error(err);
         res.status(500).send('Error updating user');
@@ -501,7 +300,7 @@ exports.addAvailability = async (req, res) => {
             return res.status(404).send('Tutor not found.');
         }
 
-        // Infer block type from submitted fields so admins are not blocked by UI mismatch.
+       
         let normalizedBlockType = blockType === 'date' ? 'date' : 'weekly';
         const hasDate = Boolean(date);
         const hasDayOfWeek = dayOfWeek !== undefined && dayOfWeek !== '';
@@ -536,22 +335,8 @@ exports.addAvailability = async (req, res) => {
             blockPayload.dayOfWeek = Number(dayOfWeek);
         }
 
-        const createdBlock = await AvailabilityBlock.create(blockPayload);
-
-        await AuditLog.create({
-            actor: req.user.id,
-            action: 'addAvailability',
-                actorName: req.user.name || req.user.email || 'Admin',
-            targetType: 'AvailabilityBlock',
-            targetId: createdBlock._id,
-            metadata: {
-                tutorName: tutor.name,
-                course: createdBlock.course,
-                blockType: createdBlock.isException ? 'date-specific' : 'weekly'
-            }
-        });
-
-        return res.redirect(`/adminDashboard?tab=hours&noticeType=success&notice=${encodeURIComponent(`Added availability for ${tutor.name}.`)}`);
+        await AvailabilityBlock.create(blockPayload);
+        return res.redirect('/adminDashboard?tab=hours');
     } catch (err) {
         console.error(err);
         return res.status(500).send('Error adding availability block');
@@ -560,28 +345,8 @@ exports.addAvailability = async (req, res) => {
 
 exports.deleteAvailability = async (req, res) => {
     try {
-        const block = await AvailabilityBlock.findById(req.params.id).populate('tutor', 'name');
-        if (!block) {
-            return res.redirect('/adminDashboard?tab=hours&noticeType=warning&notice=Availability%20block%20not%20found.');
-        }
-
         await AvailabilityBlock.findByIdAndDelete(req.params.id);
-
-        await AuditLog.create({
-            actor: req.user.id,
-            action: 'deleteAvailability',
-                actorName: req.user.name || req.user.email || 'Admin',
-            targetType: 'AvailabilityBlock',
-            targetId: block._id,
-            metadata: {
-                tutorName: block.tutor && block.tutor.name ? block.tutor.name : block.tutorName,
-                course: block.course,
-                blockType: block.isException ? 'date-specific' : 'weekly'
-            }
-        });
-
-        const tutorName = block.tutor && block.tutor.name ? block.tutor.name : block.tutorName;
-        return res.redirect(`/adminDashboard?tab=hours&noticeType=warning&notice=${encodeURIComponent(`Deleted availability for ${tutorName}.`)}`);
+        return res.redirect('/adminDashboard?tab=hours');
     } catch (err) {
         console.error(err);
         return res.status(500).send('Error deleting availability block');

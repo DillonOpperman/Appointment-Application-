@@ -53,7 +53,7 @@ run().catch(async (error) => {
     try {
         await mongoose.disconnect();
     } catch (_) {
-        // Ignore disconnect failures after fatal migration error.
+        
     }
     process.exit(1);
 });

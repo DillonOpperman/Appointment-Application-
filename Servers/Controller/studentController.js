@@ -139,16 +139,74 @@ exports.showLogin = (req, res) => {
         start: req.query.start || '',
         end: req.query.end || ''
     };
-
     const hasPendingBooking = Boolean(
         pendingBooking.tutorId && pendingBooking.course && pendingBooking.start && pendingBooking.end
     );
+    res.render('Student/studentLoginPage', { error: null, pendingBooking, hasPendingBooking });
+};
 
-    res.render('Student/studentLoginPage', {
-        error: null,
-        pendingBooking,
-        hasPendingBooking
-    });
+exports.submitLogin = async (req, res) => {
+    try {
+        const { studentEmail, studentPassword, tutorId, tutorName, course, start, end } = req.body;
+        const hasPendingBooking = Boolean(tutorId && course && start && end);
+
+        const authResult = await authenticateOrCreateStudent(studentEmail, studentPassword);
+        if (authResult.error) {
+            return res.status(401).render('Student/studentLoginPage', {
+                error: authResult.error,
+                hasPendingBooking,
+                pendingBooking: {
+                    tutorId: tutorId || '',
+                    tutorName: tutorName || '',
+                    course: course || '',
+                    start: start || '',
+                    end: end || ''
+                }
+            });
+        }
+
+        const jwt = require('jsonwebtoken');
+        const token = jwt.sign(
+            { id: authResult.student._id, email: authResult.student.email, role: 'student' },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`);
+
+        if (!hasPendingBooking) {
+            return res.redirect('/studentDashboard');
+        }
+
+        const bookingResult = await createAppointmentForSlot({
+            tutorId, course, start, end, student: authResult.student
+        });
+
+        if (bookingResult.errorCode) {
+            return res.redirect(`/studentDashboard?error=${bookingResult.errorCode}`);
+        }
+
+        await AuditLog.create({
+            actor: authResult.student._id,
+            action: 'book',
+                actorName: authResult.student.name || '',
+            targetType: 'Appointment',
+            targetId: bookingResult.appointment._id,
+            metadata: {
+                studentName: authResult.student.name,
+                tutorName: bookingResult.tutorUser ? bookingResult.tutorUser.name : null,
+                course: bookingResult.appointment.course
+            }
+        });
+
+        return res.redirect('/studentDashboard?booked=1');
+    } catch (error) {
+        console.error(error);
+        return res.status(500).render('Student/studentLoginPage', {
+            error: 'Login or booking failed. Please try again.',
+            hasPendingBooking: false,
+            pendingBooking: { tutorId: '', tutorName: '', course: '', start: '', end: '' }
+        });
+    }
 };
 
 exports.showHome = async (req, res) => {
@@ -178,28 +236,20 @@ exports.showHome = async (req, res) => {
 
             blocks.forEach((block) => {
                 const tutor = tutorMap.get(String(block.tutor));
-                if (!tutor || block.isBlackoutDate) {
-                    return;
-                }
+                if (!tutor || block.isBlackoutDate) return;
 
                 let appliesToDay = false;
                 if (block.isException) {
-                    if (block.date) {
-                        appliesToDay = getDateKey(block.date) === getDateKey(day);
-                    }
+                    if (block.date) appliesToDay = getDateKey(block.date) === getDateKey(day);
                 } else if (block.dayOfWeek === day.getDay()) {
                     appliesToDay = true;
                 }
 
-                if (!appliesToDay) {
-                    return;
-                }
+                if (!appliesToDay) return;
 
                 const slotStart = combineDateAndTime(day, block.startTime);
                 const slotEnd = combineDateAndTime(day, block.endTime);
-                if (slotStart <= now || slotEnd <= slotStart) {
-                    return;
-                }
+                if (slotStart <= now || slotEnd <= slotStart) return;
 
                 slotCandidates.push({
                     tutorId: String(tutor._id),
@@ -214,9 +264,7 @@ exports.showHome = async (req, res) => {
 
         const availableSlots = slotCandidates.filter((slot) => {
             return !bookedAppointments.some((appt) => {
-                if (String(appt.tutor) !== slot.tutorId) {
-                    return false;
-                }
+                if (String(appt.tutor) !== slot.tutorId) return false;
                 return slot.start < appt.end && appt.start < slot.end;
             });
         });
@@ -237,11 +285,11 @@ exports.showHome = async (req, res) => {
                     ? 'Please fill out all booking fields.'
                     : req.query.error === 'invalid_tutor'
                         ? 'Selected tutor could not be found.'
-                            : req.query.error === 'invalid_role'
-                                ? 'That email belongs to a non-student account. Use another email.'
-                            : req.query.error === 'booking_failed'
-                                ? 'Booking failed. Please try again.'
-                                : null;
+                        : req.query.error === 'invalid_role'
+                            ? 'That email belongs to a non-student account. Use another email.'
+                        : req.query.error === 'booking_failed'
+                            ? 'Booking failed. Please try again.'
+                            : null;
 
         return res.render('Home/home', {
             availableSlots: viewSlots,
@@ -254,81 +302,6 @@ exports.showHome = async (req, res) => {
     }
 };
 
-exports.submitLogin = async (req, res) => {
-    try {
-        const { studentEmail, studentPassword, tutorId, tutorName, course, start, end } = req.body;
-
-        const hasPendingBooking = Boolean(tutorId && course && start && end);
-
-        const authResult = await authenticateOrCreateStudent(studentEmail, studentPassword);
-        if (authResult.error) {
-            return res.status(401).render('Student/studentLoginPage', {
-                error: authResult.error,
-                hasPendingBooking,
-                pendingBooking: {
-                    tutorId: tutorId || '',
-                    tutorName: tutorName || '',
-                    course: course || '',
-                    start: start || '',
-                    end: end || ''
-                }
-            });
-        }
-
-        const jwt = require('jsonwebtoken');
-        const token = jwt.sign(
-     { id: authResult.student._id, name: authResult.student.name, email: authResult.student.email, role: 'student' },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-            );
-            res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`);
-
-            if (!hasPendingBooking) {
-                return res.redirect('/studentDashboard');
-            }
-
-        const bookingResult = await createAppointmentForSlot({
-            tutorId,
-            course,
-            start,
-            end,
-            student: authResult.student
-        });
-
-        if (bookingResult.errorCode) {
-            return res.redirect(`/studentDashboard?error=${bookingResult.errorCode}`);
-        }
-
-        await AuditLog.create({
-            actor: authResult.student._id,
-            action: 'book',
-                actorName: authResult.student.name || '',
-            targetType: 'Appointment',
-            targetId: bookingResult.appointment._id,
-            metadata: {
-                studentName: authResult.student.name,
-                tutorName: bookingResult.tutorUser ? bookingResult.tutorUser.name : null,
-                course: bookingResult.appointment.course
-            }
-        });
-
-        return res.redirect('/studentDashboard?booked=1');
-    } catch (error) {
-        console.error(error);
-        return res.status(500).render('Student/studentLoginPage', {
-            error: 'Login or booking failed. Please try again.',
-            hasPendingBooking: false,
-            pendingBooking: {
-                tutorId: '',
-                tutorName: '',
-                course: '',
-                start: '',
-                end: ''
-            }
-        });
-    }
-
-};
 
 exports.showDashboard = async (req, res) => {
     try {

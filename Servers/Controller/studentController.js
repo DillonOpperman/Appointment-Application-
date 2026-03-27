@@ -2,6 +2,7 @@ const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const AuditLog = require('../Model/AuditLog');
 const User = require('../Model/User');
+const AuditLog = require('../Model/AuditLog');
 const bcrypt = require('bcryptjs');
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
 
@@ -441,6 +442,19 @@ exports.cancelAppointment = async (req, res) => {
 
         appointment.status = 'cancelled';
         await appointment.save();
+
+        await AuditLog.create({
+            actor: student._id,
+            action: 'cancel_appointment',
+            targetType: 'Appointment',
+            targetId: appointment._id,
+            metadata: {
+                tutorId: appointment.tutor._id,
+                course: appointment.course,
+                startTime: appointment.start,
+                endTime: appointment.end
+            }
+        });
 
         sendCancellationConfirmation({
             studentEmail: student.email,

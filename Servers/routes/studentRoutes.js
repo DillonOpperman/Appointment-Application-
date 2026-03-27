@@ -5,11 +5,9 @@ const { authenticatePageJWT, authorizeRoles } = require('../middleware/auth');
 
 router.get('/home', studentController.showHome);
 router.get('/studentLogin', studentController.showLogin);
-router.post('/submitStudentLogin', studentController.submitLogin);
-router.get('/studentDashboard', authenticatePageJWT, authorizeRoles('student'), studentController.showDashboard);
-router.post('/student/cancelAppointment/:id', authenticatePageJWT, authorizeRoles('student'), studentController.cancelAppointment);
-router.post('/student/bookAppointment', authenticatePageJWT, authorizeRoles('student'), studentController.bookAppointment);
-
-//router.get('/studentHome', studentController.showHome);
+router.post('/submitStudentLogin', studentController.showHome);
+router.get('/studentHome', studentController.showHome);
+router.post('/studentCreateAppointment', studentController.createAppointment)
+router.post('/studentCancelAppointment', studentController.cancelAppointment)
 
 module.exports = router;

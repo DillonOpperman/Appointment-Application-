@@ -161,105 +161,21 @@ exports.showLogin = (req, res) => {
 };
 
 exports.showHome = async (req, res) => {
+    //res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword);
+
     try {
-        const now = new Date();
-        const horizonDays = 14;
-        const horizonEnd = new Date(now);
-        horizonEnd.setDate(horizonEnd.getDate() + horizonDays);
-
-        const tutors = await User.find({ role: 'tutor', active: true }).select('_id name email');
-        const tutorMap = new Map(tutors.map((tutor) => [String(tutor._id), tutor]));
-
-        const blocks = await AvailabilityBlock.find({ tutor: { $in: tutors.map((t) => t._id) } })
-            .sort({ createdAt: -1 });
-
-        const bookedAppointments = await Appointment.find({
-            status: 'booked',
-            start: { $lt: horizonEnd },
-            end: { $gt: now }
-        }).select('tutor start end');
-
-        const slotCandidates = [];
-        for (let dayOffset = 0; dayOffset < horizonDays; dayOffset += 1) {
-            const day = new Date(now);
-            day.setHours(0, 0, 0, 0);
-            day.setDate(day.getDate() + dayOffset);
-
-            blocks.forEach((block) => {
-                const tutor = tutorMap.get(String(block.tutor));
-                if (!tutor || block.isBlackoutDate) {
-                    return;
-                }
-
-                let appliesToDay = false;
-                if (block.isException) {
-                    if (block.date) {
-                        appliesToDay = getDateKey(block.date) === getDateKey(day);
-                    }
-                } else if (block.dayOfWeek === day.getDay()) {
-                    appliesToDay = true;
-                }
-
-                if (!appliesToDay) {
-                    return;
-                }
-
-                const slotStart = combineDateAndTime(day, block.startTime);
-                const slotEnd = combineDateAndTime(day, block.endTime);
-                if (slotStart <= now || slotEnd <= slotStart) {
-                    return;
-                }
-
-                slotCandidates.push({
-                    tutorId: String(tutor._id),
-                    tutorName: tutor.name,
-                    tutorEmail: tutor.email,
-                    course: block.course || 'IT 330',
-                    start: slotStart,
-                    end: slotEnd
-                });
-            });
-        }
-
-        const availableSlots = slotCandidates.filter((slot) => {
-            return !bookedAppointments.some((appt) => {
-                if (String(appt.tutor) !== slot.tutorId) {
-                    return false;
-                }
-                return slot.start < appt.end && appt.start < slot.end;
-            });
+        tutors = await getTutors();
+        appointments = await Appointment.find()
+        students = await User.find({ role: "student" });
+        res.render("Student/studentHome", {
+            tutors: tutors,
+            students: students,
+            appointments: appointments
         });
 
-        availableSlots.sort((a, b) => a.start - b.start);
-
-        const viewSlots = availableSlots.slice(0, 40).map((slot) => ({
-            ...slot,
-            startIso: slot.start.toISOString(),
-            endIso: slot.end.toISOString()
-        }));
-
-        const notice = req.query.booked === '1'
-            ? 'Appointment booked successfully.'
-            : req.query.error === 'slot_taken'
-                ? 'That appointment slot was just taken. Please choose another.'
-                : req.query.error === 'missing_fields'
-                    ? 'Please fill out all booking fields.'
-                    : req.query.error === 'invalid_tutor'
-                        ? 'Selected tutor could not be found.'
-                            : req.query.error === 'invalid_role'
-                                ? 'That email belongs to a non-student account. Use another email.'
-                            : req.query.error === 'booking_failed'
-                                ? 'Booking failed. Please try again.'
-                                : null;
-
-        return res.render('Home/home', {
-            availableSlots: viewSlots,
-            notice,
-            noticeType: req.query.booked === '1' ? 'success' : 'error'
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Unable to load home page appointment availability.');
+    } catch (err) {
+        console.error(err);
+        res.send("Error loading tutors");
     }
 };
 
@@ -300,193 +216,26 @@ exports.submitLogin = async (req, res) => {
             tutorId,
             course,
             start,
-            end,
-            student: authResult.student
+            end
         });
 
-        if (bookingResult.errorCode) {
-            return res.redirect(`/studentDashboard?error=${bookingResult.errorCode}`);
-        }
+        res.redirect("/studentHome");
 
-        return res.redirect('/studentDashboard?booked=1');
-    } catch (error) {
-        console.error(error);
-        return res.status(500).render('Student/studentLoginPage', {
-            error: 'Login or booking failed. Please try again.',
-            hasPendingBooking: false,
-            pendingBooking: {
-                tutorId: '',
-                tutorName: '',
-                course: '',
-                start: '',
-                end: ''
-            }
-        });
-    }
-
-};
-
-exports.showDashboard = async (req, res) => {
-    try {
-        const student = await User.findById(req.user.id).select('name email');
-        if (!student) return res.redirect('/studentLogin');
-
-        const appointments = await Appointment.find({ student: student._id })
-            .populate('tutor', 'name email')
-            .sort({ start: -1 });
-
-        const now = new Date();
-        const horizonDays = 14;
-        const horizonEnd = new Date(now);
-        horizonEnd.setDate(horizonEnd.getDate() + horizonDays);
-
-        const tutors = await User.find({ role: 'tutor', active: true }).select('_id name email');
-        const tutorMap = new Map(tutors.map(t => [String(t._id), t]));
-
-        const blocks = await AvailabilityBlock.find({ tutor: { $in: tutors.map(t => t._id) } })
-            .sort({ createdAt: -1 });
-
-        const bookedAppointments = await Appointment.find({
-            status: 'booked',
-            start: { $lt: horizonEnd },
-            end: { $gt: now }
-        }).select('tutor start end');
-
-        const slotCandidates = [];
-        for (let dayOffset = 0; dayOffset < horizonDays; dayOffset++) {
-            const day = new Date(now);
-            day.setHours(0, 0, 0, 0);
-            day.setDate(day.getDate() + dayOffset);
-
-            blocks.forEach(block => {
-                const tutor = tutorMap.get(String(block.tutor));
-                if (!tutor || block.isBlackoutDate) return;
-
-                let appliesToDay = false;
-                if (block.isException) {
-                    if (block.date) appliesToDay = getDateKey(block.date) === getDateKey(day);
-                } else if (block.dayOfWeek === day.getDay()) {
-                    appliesToDay = true;
-                }
-
-                if (!appliesToDay) return;
-
-                const slotStart = combineDateAndTime(day, block.startTime);
-                const slotEnd = combineDateAndTime(day, block.endTime);
-                if (slotStart <= now || slotEnd <= slotStart) return;
-
-                slotCandidates.push({
-                    tutorId: String(tutor._id),
-                    tutorName: tutor.name,
-                    tutorEmail: tutor.email,
-                    course: block.course || 'IT 330',
-                    start: slotStart,
-                    end: slotEnd,
-                    startIso: slotStart.toISOString(),
-                    endIso: slotEnd.toISOString()
-                });
-            });
-        }
-
-        const availableSlots = slotCandidates.filter(slot =>
-            !bookedAppointments.some(appt =>
-                String(appt.tutor) === slot.tutorId &&
-                slot.start < appt.end && appt.start < slot.end
-            )
-        ).sort((a, b) => a.start - b.start).slice(0, 40);
-
-        const notice = req.query.booked === '1'
-            ? 'Appointment booked successfully!'
-            : req.query.cancelled === '1'
-                ? 'Appointment cancelled successfully.'
-                : req.query.error === 'slot_taken'
-                    ? 'That slot was just taken. Please choose another.'
-                    : req.query.error === 'already_cancelled'
-                        ? 'That appointment is already cancelled.'
-                        : null;
-
-        const noticeType = req.query.booked === '1' ? 'success' :
-                           req.query.cancelled === '1' ? 'warning' : 'error';
-
-        return res.render('Student/dashboard', {
-            student,
-            appointments,
-            availableSlots,
-            notice,
-            noticeType
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error loading student dashboard.');
+    } catch (err) {
+        console.error(err);
+        res.send("Error creating appointment");
     }
 };
-
 exports.cancelAppointment = async (req, res) => {
     try {
-        const student = await User.findById(req.user.id).select('name email');
-        if (!student) return res.redirect('/studentLogin');
-
-        const appointment = await Appointment.findOne({
-            _id: req.params.id,
-            student: student._id,
-            status: 'booked'
-        }).populate('tutor', 'name');
-
-        if (!appointment) {
-            return res.redirect('/studentDashboard?error=already_cancelled');
-        }
-
-        appointment.status = 'cancelled';
-        await appointment.save();
-
-        await AuditLog.create({
-            actor: student._id,
-            action: 'cancel_appointment',
-            targetType: 'Appointment',
-            targetId: appointment._id,
-            metadata: {
-                tutorId: appointment.tutor._id,
-                course: appointment.course,
-                startTime: appointment.start,
-                endTime: appointment.end
-            }
+        id = req.body.appointment
+        await Appointment.findByIdAndUpdate(id, {
+            status: "cancelled"
         });
-
-        sendCancellationConfirmation({
-            studentEmail: student.email,
-            studentName: student.name,
-            tutorName: appointment.tutor ? appointment.tutor.name : 'Your Tutor',
-            course: appointment.course,
-            start: appointment.start,
-            end: appointment.end
-        }).catch(err => console.error('Cancellation email error:', err));
-
-        return res.redirect('/studentDashboard?cancelled=1');
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error cancelling appointment.');
+        res.redirect("/studentHome");
     }
-};
-
-exports.bookAppointment = async (req, res) => {
-    try {
-        const student = await User.findById(req.user.id).select('name email');
-        if (!student) return res.redirect('/studentLogin');
-
-        const { tutorId, course, start, end } = req.body;
-        if (!tutorId || !course || !start || !end) {
-            return res.redirect('/studentDashboard?error=missing_fields');
-        }
-
-        const bookingResult = await createAppointmentForSlot({ tutorId, course, start, end, student });
-
-        if (bookingResult.errorCode) {
-            return res.redirect(`/studentDashboard?error=${bookingResult.errorCode}`);
-        }
-
-        return res.redirect('/studentDashboard?booked=1');
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Error booking appointment.');
+    catch (err) {
+        console.error(err);
+        res.send("Error creating appointment");
     }
 };

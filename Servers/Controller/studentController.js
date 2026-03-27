@@ -129,7 +129,6 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
     
     return { ok: true, appointment, tutorUser };
 }
-<<<<<<< HEAD
 
 exports.showLogin = (req, res) => {
     const pendingBooking = {
@@ -150,138 +149,6 @@ exports.submitLogin = async (req, res) => {
         const { studentEmail, studentPassword, tutorId, tutorName, course, start, end } = req.body;
         const hasPendingBooking = Boolean(tutorId && course && start && end);
 
-=======
-
-exports.showLogin = (req, res) => {
-    const pendingBooking = {
-        tutorId: req.query.tutorId || '',
-        tutorName: req.query.tutorName || '',
-        course: req.query.course || '',
-        start: req.query.start || '',
-        end: req.query.end || ''
-    };
-
-    const hasPendingBooking = Boolean(
-        pendingBooking.tutorId && pendingBooking.course && pendingBooking.start && pendingBooking.end
-    );
-
-    res.render('Student/studentLoginPage', {
-        error: null,
-        pendingBooking,
-        hasPendingBooking
-    });
-};
-
-exports.showHome = async (req, res) => {
-    try {
-        const now = new Date();
-        const horizonDays = 14;
-        const horizonEnd = new Date(now);
-        horizonEnd.setDate(horizonEnd.getDate() + horizonDays);
-
-        const tutors = await User.find({ role: 'tutor', active: true }).select('_id name email');
-        const tutorMap = new Map(tutors.map((tutor) => [String(tutor._id), tutor]));
-
-        const blocks = await AvailabilityBlock.find({ tutor: { $in: tutors.map((t) => t._id) } })
-            .sort({ createdAt: -1 });
-
-        const bookedAppointments = await Appointment.find({
-            status: 'booked',
-            start: { $lt: horizonEnd },
-            end: { $gt: now }
-        }).select('tutor start end');
-
-        const slotCandidates = [];
-        for (let dayOffset = 0; dayOffset < horizonDays; dayOffset += 1) {
-            const day = new Date(now);
-            day.setHours(0, 0, 0, 0);
-            day.setDate(day.getDate() + dayOffset);
-
-            blocks.forEach((block) => {
-                const tutor = tutorMap.get(String(block.tutor));
-                if (!tutor || block.isBlackoutDate) {
-                    return;
-                }
-
-                let appliesToDay = false;
-                if (block.isException) {
-                    if (block.date) {
-                        appliesToDay = getDateKey(block.date) === getDateKey(day);
-                    }
-                } else if (block.dayOfWeek === day.getDay()) {
-                    appliesToDay = true;
-                }
-
-                if (!appliesToDay) {
-                    return;
-                }
-
-                const slotStart = combineDateAndTime(day, block.startTime);
-                const slotEnd = combineDateAndTime(day, block.endTime);
-                if (slotStart <= now || slotEnd <= slotStart) {
-                    return;
-                }
-
-                slotCandidates.push({
-                    tutorId: String(tutor._id),
-                    tutorName: tutor.name,
-                    tutorEmail: tutor.email,
-                    course: block.course || 'IT 330',
-                    start: slotStart,
-                    end: slotEnd
-                });
-            });
-        }
-
-        const availableSlots = slotCandidates.filter((slot) => {
-            return !bookedAppointments.some((appt) => {
-                if (String(appt.tutor) !== slot.tutorId) {
-                    return false;
-                }
-                return slot.start < appt.end && appt.start < slot.end;
-            });
-        });
-
-        availableSlots.sort((a, b) => a.start - b.start);
-
-        const viewSlots = availableSlots.slice(0, 40).map((slot) => ({
-            ...slot,
-            startIso: slot.start.toISOString(),
-            endIso: slot.end.toISOString()
-        }));
-
-        const notice = req.query.booked === '1'
-            ? 'Appointment booked successfully.'
-            : req.query.error === 'slot_taken'
-                ? 'That appointment slot was just taken. Please choose another.'
-                : req.query.error === 'missing_fields'
-                    ? 'Please fill out all booking fields.'
-                    : req.query.error === 'invalid_tutor'
-                        ? 'Selected tutor could not be found.'
-                            : req.query.error === 'invalid_role'
-                                ? 'That email belongs to a non-student account. Use another email.'
-                            : req.query.error === 'booking_failed'
-                                ? 'Booking failed. Please try again.'
-                                : null;
-
-        return res.render('Home/home', {
-            availableSlots: viewSlots,
-            notice,
-            noticeType: req.query.booked === '1' ? 'success' : 'error'
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('Unable to load home page appointment availability.');
-    }
-};
-
-exports.submitLogin = async (req, res) => {
-    try {
-        const { studentEmail, studentPassword, tutorId, tutorName, course, start, end } = req.body;
-
-        const hasPendingBooking = Boolean(tutorId && course && start && end);
-
->>>>>>> origin/Dillon
         const authResult = await authenticateOrCreateStudent(studentEmail, studentPassword);
         if (authResult.error) {
             return res.status(401).render('Student/studentLoginPage', {
@@ -299,34 +166,18 @@ exports.submitLogin = async (req, res) => {
 
         const jwt = require('jsonwebtoken');
         const token = jwt.sign(
-<<<<<<< HEAD
             { id: authResult.student._id, email: authResult.student.email, role: 'student' },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
         res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`);
-=======
-     { id: authResult.student._id, name: authResult.student.name, email: authResult.student.email, role: 'student' },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-            );
-            res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`);
->>>>>>> origin/Dillon
 
         if (!hasPendingBooking) {
             return res.redirect('/studentDashboard');
         }
 
         const bookingResult = await createAppointmentForSlot({
-<<<<<<< HEAD
             tutorId, course, start, end, student: authResult.student
-=======
-            tutorId,
-            course,
-            start,
-            end,
-            student: authResult.student
->>>>>>> origin/Dillon
         });
 
         if (bookingResult.errorCode) {

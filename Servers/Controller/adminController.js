@@ -4,6 +4,7 @@ const AuditLog = require('../Model/AuditLog');
 const User = require('../Model/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const NotificationLog = require('../Model/NotificationLog');
 const { sendCancellationConfirmation } = require('../middleware/emailService');
 
 function parseTimeToMinutes(timeValue) {
@@ -106,10 +107,18 @@ exports.showDashboard = async (req, res) => {
             .populate('createdBy', 'name email')
             .sort({ createdAt: -1 });
 
-        const validTabs = ['appointments', 'hours', 'users'];
+            const auditLogs = await AuditLog.find()
+            .populate('actor', 'name email') 
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+           
+const notificationLogs = await NotificationLog.find().sort({ createdAt: -1 }).limit(20);
+
+        const validTabs = ['appointments', 'hours', 'users', 'logs'];
         const activeTab = validTabs.includes(req.query.tab) ? req.query.tab : 'appointments';
 
-        res.render('Admin/dashboard', { appointments, users, tutors, availabilityBlocks, activeTab });
+        res.render('Admin/dashboard', { appointments, users, tutors, availabilityBlocks, activeTab, auditLogs, notificationLogs });
     } catch (err) {
         console.error(err);
         res.status(500).send('Error loading dashboard');

@@ -2,7 +2,6 @@ const Appointment = require('../Model/Appointment');
 const AvailabilityBlock = require('../Model/AvailabilityBlock');
 const AuditLog = require('../Model/AuditLog');
 const User = require('../Model/User');
-const AuditLog = require('../Model/AuditLog');
 const bcrypt = require('bcryptjs');
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
 

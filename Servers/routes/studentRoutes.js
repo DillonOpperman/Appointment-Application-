@@ -9,10 +9,5 @@ router.post('/submitStudentLogin', studentController.submitLogin);
 router.get('/studentDashboard', authenticatePageJWT, authorizeRoles('student'), studentController.showDashboard);
 router.post('/student/cancelAppointment/:id', authenticatePageJWT, authorizeRoles('student'), studentController.cancelAppointment);
 router.post('/student/bookAppointment', authenticatePageJWT, authorizeRoles('student'), studentController.bookAppointment);
-<<<<<<< Updated upstream
-
-//router.get('/studentHome', studentController.showHome);
-=======
->>>>>>> Stashed changes
 
 module.exports = router;

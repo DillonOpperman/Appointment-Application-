@@ -10,8 +10,10 @@ require('dotenv').config();
 
 
 const connectDB = require('./Servers/Database/connect');
-const authRoutes = require('./Servers/Routes/authRoutes');
-const adminRoutes = require('./Servers/Routes/adminRoutes');
+
+const authRoutes = require('./Servers/routes/authRoutes');
+const adminRoutes = require('./Servers/routes/adminRoutes');
+
 const studentRoutes = require('./Servers/routes/studentRoutes');
 const tutorRoutes = require('./Servers/routes/tutorRoutes');
 const User = require('./Servers/Model/User');

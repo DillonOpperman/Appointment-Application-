@@ -54,7 +54,31 @@ async function authenticateOrCreateStudent(studentEmail, studentPassword) {
     }
 
     let student = await User.findOne({ email: normalizedEmail });
-    if (student && student.role !== 'student') {
+
+    // No account found, do NOT auto-create, new fix
+    if (!student) {
+        return { error: 'No account found for this email. Please contact an admin to create your account.' };
+    }
+ 
+    if (student.role !== 'student') {
+        return { error: 'That email belongs to a non-student account.' };
+    }
+ 
+    if (!student.active) {
+        return { error: 'This student account is inactive. Please contact an admin.' };
+    }
+ 
+    const isMatch = await bcrypt.compare(trimmedPassword, student.passwordHash);
+    if (!isMatch) {
+        return { error: 'Invalid email/password for this student account.' };
+    }
+ 
+    return { student };
+}
+
+   /* commented out for now since it could be a potentiall security vulnerability 
+
+   if (student && student.role !== 'student') {
         return { error: 'That email belongs to a non-student account.' };
     }
 
@@ -82,6 +106,7 @@ async function authenticateOrCreateStudent(studentEmail, studentPassword) {
 
     return { student };
 }
+*/
 
 async function createAppointmentForSlot({ tutorId, course, start, end, student }) {
     const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id name');
@@ -95,7 +120,31 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
         return { errorCode: 'booking_failed' };
     }
 
-    const overlap = await Appointment.findOne({
+// Check tutor overlap
+const tutorOverlap = await Appointment.findOne({
+    tutor: tutor._id,
+    status: 'booked',
+    start: { $lt: endDate },
+    end: { $gt: startDate }
+}).select('_id');
+
+if (tutorOverlap) {
+    return { errorCode: 'slot_taken' };
+}
+
+// FIX ISSUE 5: Check student overlap — prevent double-booking with different tutors
+const studentOverlap = await Appointment.findOne({
+    student: student._id,
+    status: 'booked',
+    start: { $lt: endDate },
+    end: { $gt: startDate }
+}).select('_id');
+
+if (studentOverlap) {
+    return { errorCode: 'student_conflict' };
+}
+
+    /*const overlap = await Appointment.findOne({
         tutor: tutor._id,
         status: 'booked',
         start: { $lt: endDate },
@@ -105,6 +154,8 @@ async function createAppointmentForSlot({ tutorId, course, start, end, student }
     if (overlap) {
         return { errorCode: 'slot_taken' };
     }
+    */
+
 
     const appointment = await Appointment.create({
         student: student._id,
@@ -289,6 +340,8 @@ exports.showHome = async (req, res) => {
                             ? 'That email belongs to a non-student account. Use another email.'
                         : req.query.error === 'booking_failed'
                             ? 'Booking failed. Please try again.'
+                            : req.query.error === 'student_conflict'
+                            ? 'You already have an appointment at that time. Please choose a different slot.'
                             : null;
 
         return res.render('Home/home', {
@@ -380,7 +433,9 @@ exports.showDashboard = async (req, res) => {
                     ? 'That slot was just taken. Please choose another.'
                     : req.query.error === 'already_cancelled'
                         ? 'That appointment is already cancelled.'
-                        : null;
+                        : req.query.error === 'student_conflict'
+                            ? 'You already have an appointment at that time. Please choose a different slot.'
+                            : null;
 
         const noticeType = req.query.booked === '1' ? 'success' :
                            req.query.cancelled === '1' ? 'warning' : 'error';

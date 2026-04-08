@@ -183,6 +183,36 @@ exports.editAppointment = async (req, res) => {
         if (isNaN(startDate) || isNaN(endDate)) return res.status(400).send('Invalid date/time values.');
         if (endDate <= startDate) return res.status(400).send('End time must be after start time.');
 
+        // Load existing appointment to get tutor and student IDs
+        const existing = await Appointment.findById(req.params.id);
+        if (!existing) return res.status(404).send('Appointment not found.');
+
+        // Check tutor overlap (excluding this appointment)
+        const tutorOverlap = await Appointment.findOne({
+            tutor: existing.tutor,
+            status: 'booked',
+            start: { $lt: endDate },
+            end: { $gt: startDate },
+            _id: { $ne: existing._id }
+        }).select('_id');
+
+        if (tutorOverlap) {
+            return res.status(409).send('Cannot reschedule: Tutor already has an appointment at this time.');
+        }
+
+        // Check student overlap (excluding this appointment)
+        const studentOverlap = await Appointment.findOne({
+            student: existing.student,
+            status: 'booked',
+            start: { $lt: endDate },
+            end: { $gt: startDate },
+            _id: { $ne: existing._id }
+        }).select('_id');
+
+        if (studentOverlap) {
+            return res.status(409).send('Cannot reschedule: Student already has an appointment at this time.');
+        }
+
         await Appointment.findByIdAndUpdate(req.params.id, { start: startDate, end: endDate });
 
         await AuditLog.create({
@@ -310,6 +340,32 @@ exports.addAvailability = async (req, res) => {
         }
         if (normalizedBlockType === 'date' && !hasDate && hasDayOfWeek) {
             normalizedBlockType = 'weekly';
+        }
+
+        // Check for overlapping availability blocks before inserting
+        const overlapQuery = { tutor: tutor._id };
+
+        if (normalizedBlockType === 'date') {
+            overlapQuery.isException = true;
+            overlapQuery.date = new Date(date);
+        } else {
+            overlapQuery.isException = false;
+            overlapQuery.dayOfWeek = Number(dayOfWeek);
+        }
+
+        const existingBlocks = await AvailabilityBlock.find(overlapQuery).lean();
+
+        const hasOverlap = existingBlocks.some(block => {
+            const existingStart = parseTimeToMinutes(block.startTime);
+            const existingEnd = parseTimeToMinutes(block.endTime);
+            if (existingStart === null || existingEnd === null) return false;
+            return startMinutes < existingEnd && existingStart < endMinutes;
+        });
+
+        if (hasOverlap) {
+            return res.status(409).send(
+                'This tutor already has an availability block that overlaps with the specified time. Please adjust the time range or delete the existing block first.'
+            );
         }
 
         const blockPayload = {

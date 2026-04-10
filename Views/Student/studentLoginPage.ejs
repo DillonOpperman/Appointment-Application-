@@ -106,6 +106,7 @@
         <% } %>
 
         <form action='/submitStudentLogin' method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="mb-3">
                 <label for="studentEmail" class="form-label">Email</label>
                 <input type="text" class="form-control" id="studentEmail" name="studentEmail" required>

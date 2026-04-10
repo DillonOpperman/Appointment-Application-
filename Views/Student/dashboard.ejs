@@ -153,6 +153,7 @@
                                     <td>
                                         <% if (appt.status === 'booked') { %>
                                             <form action="/student/cancelAppointment/<%= appt._id %>" method="POST">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     onclick="return confirm('Are you sure you want to cancel this appointment?')">
                                                     Cancel
@@ -199,6 +200,7 @@
                                     <td><%= new Date(slot.end).toLocaleString() %></td>
                                     <td>
                                         <form action="/student/bookAppointment" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                             <input type="hidden" name="tutorId" value="<%= slot.tutorId %>">
                                             <input type="hidden" name="course" value="<%= slot.course %>">
                                             <input type="hidden" name="start" value="<%= slot.startIso %>">

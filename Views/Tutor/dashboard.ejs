@@ -284,6 +284,7 @@
     <div class="notes-modal">
         <h5 id="modalTitle">Session Notes</h5>
         <form id="notesForm" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="mb-3">
                 <label class="form-label fw-bold">Add a Comment</label>
                 <textarea name="commentText" class="form-control" rows="3"

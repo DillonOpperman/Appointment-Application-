@@ -7,7 +7,7 @@ const { authenticateJWT } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post(
+/*router.post(
     '/register',
     [
         body('name').trim().notEmpty().withMessage('Name is required.'),
@@ -52,6 +52,7 @@ router.post(
         }
     }
 );
+*/
 
 router.post(
     '/login',

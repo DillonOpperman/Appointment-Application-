@@ -10,8 +10,10 @@ require('dotenv').config();
 
 
 const connectDB = require('./Servers/Database/connect');
-const authRoutes = require('./Servers/Routes/authRoutes');
-const adminRoutes = require('./Servers/Routes/adminRoutes');
+
+const authRoutes = require('./Servers/routes/authRoutes');
+const adminRoutes = require('./Servers/routes/adminRoutes');
+
 const studentRoutes = require('./Servers/routes/studentRoutes');
 const tutorRoutes = require('./Servers/routes/tutorRoutes');
 const User = require('./Servers/Model/User');
@@ -22,6 +24,33 @@ const { sendAppointmentReminder } = require('./Servers/middleware/emailService')
 
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
+
+
+// added a rate limit to how often you can incorrectly login before 
+const rateLimit = require('express-rate-limit');
+
+const loginLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 5,
+    message: 'Too many login attempts. Please try again in 1 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use('/submitAdminLogin', loginLimiter);
+app.use('/submitStudentLogin', loginLimiter);
+app.use('/submitTutorLogin', loginLimiter);
+app.use('/api/auth/login', loginLimiter);
+
+const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
+
+app.use(cookieParser());
+app.use(csrf({ cookie: true }));
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
 
 app.use((req, res, next) => {
     res.locals.currentUser = null;

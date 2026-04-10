@@ -85,6 +85,7 @@
         <% } %>
 
         <form action="/submitAdminLogin" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="mb-3">
                 <label for="adminEmail" class="form-label">Email</label>
                 <input type="email" class="form-control" id="adminEmail" name="adminEmail" required placeholder="admin@ilstu.edu">

@@ -34,17 +34,17 @@
             <div class="apptFilterBar">
                 <h2>View & Cancel Appointments</h2>
                 <div class="apptFilters">
-                    <select id="filterDate" onchange="applyFilters()">
+                    <select id="filterDate" aria-label="Filter by date" onchange="applyFilters()">
                         <option value="">Date: All</option>
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
                     </select>
-                    <select id="filterStudent" onchange="applyFilters()">
+                    <select id="filterStudent" aria-label="Filter by student" onchange="applyFilters()">
                         <option value="">Student: All</option>
                         <option value="az">Student: A → Z</option>
                         <option value="za">Student: Z → A</option>
                     </select>
-                    <select id="filterCourse" onchange="applyFilters()">
+                    <select id="filterCourse" aria-label="Filter by course" onchange="applyFilters()">
                         <option value="">Course: All</option>
                         <% [...new Set(safeAppointments.map(a => a.course).filter(Boolean))].sort().forEach(function(c) { %>
                             <option value="<%= c %>"><%= c %></option>

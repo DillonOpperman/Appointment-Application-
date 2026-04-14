@@ -11,7 +11,7 @@ body {
 }
 
 .staticHeader {
-    background-color: #CE1126;
+    background-color: #7a0c18;
     color: white;
     padding: 16px 30px;
     display: flex;
@@ -29,7 +29,7 @@ body {
     color: white;
     text-decoration: none;
     margin-left: 20px;
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .staticNavBar a:hover {
@@ -61,7 +61,7 @@ body {
 }
 
 .sidebar h2 {
-    color: #CE1126;
+    color: #ff6b6b;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -87,7 +87,7 @@ body {
 }
 
 .sidebar a {
-    color: #aaaaaa;
+    color: #cccccc;
     text-decoration: none;
     padding: 12px 16px;
     font-size: 15px;

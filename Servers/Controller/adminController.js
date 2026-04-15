@@ -156,13 +156,38 @@ exports.showDashboard = async (req, res) => {
             .populate('createdBy', 'name email')
             .sort({ createdAt: -1 });
 
-            const auditLogs = await AuditLog.find()
+            const rawAuditLogs = await AuditLog.find()
             .populate('actor', 'name email') 
             .sort({ createdAt: -1 })
             .limit(20);
 
-           
-const notificationLogs = await NotificationLog.find().sort({ createdAt: -1 }).limit(20);
+            const auditLogs = rawAuditLogs.map(log => {
+                const l = log.toObject();
+                l.actorDisplayName = l.actorName || (log.actor && log.actor.name) || 'Unknown';
+                l.targetLabel = l.targetType || '—';
+                const m = l.metadata || {};
+                if (m.studentName || m.tutorName || m.course) {
+                    const parts = [];
+                    if (m.studentName) parts.push(m.studentName);
+                    if (m.tutorName) parts.push(m.tutorName);
+                    if (m.course) parts.push(m.course);
+                    l.summary = parts.join(' / ');
+                } else if (m.newStart) {
+                    l.summary = `Rescheduled to ${new Date(m.newStart).toLocaleString('en-US', { hour12: true })}`;
+                } else {
+                    l.summary = Object.entries(m).map(([k, v]) => `${k}: ${v}`).join('; ') || '—';
+                }
+                return l;
+            });
+
+const rawNotificationLogs = await NotificationLog.find().sort({ createdAt: -1 }).limit(20);
+            const notificationLogs = rawNotificationLogs.map(log => {
+                const l = log.toObject();
+                l.recipientDisplayName = l.recipientName || '';
+                const pr = l.providerResponse || {};
+                l.summary = pr.messageId ? `ID: ${pr.messageId}` : (pr.message || pr.error || '—');
+                return l;
+            });
 
         const validTabs = ['appointments', 'hours', 'users', 'logs'];
         const activeTab = validTabs.includes(req.query.tab) ? req.query.tab : 'appointments';

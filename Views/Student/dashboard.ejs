@@ -122,6 +122,24 @@
             </div>
         <% } %>
 
+        <!-- Google Calendar Connection Notice -->
+        <% if (!googleConnected) { %>
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>Connect Google Calendar:</strong> Click the button below to authorize adding appointments to your Google Calendar.
+                <a href="/auth/google" class="btn btn-sm btn-primary ms-2">Connect Google Calendar</a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } else { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                ✓ Google Calendar connected! You can now add appointments to your calendar.
+                <% if (googleAccountEmail) { %>
+                    <div><small>Connected Google account: <strong><%= googleAccountEmail %></strong></small></div>
+                <% } %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn btn-sm btn-link text-danger ms-2" onclick="disconnectGoogleCalendar(); return false;">Disconnect</button>
+            </div>
+        <% } %>
+
         <!-- My Appointments -->
         <div class="panel">
             <h3>My Appointments</h3>
@@ -150,15 +168,25 @@
                                     <td>
                                         <span class="badge badge-<%= appt.status %>"><%= appt.status %></span>
                                     </td>
-                                    <td>
+                                    <td style="display: flex; gap: 8px; align-items: center;">
                                         <% if (appt.status === 'booked') { %>
-                                            <form action="/student/cancelAppointment/<%= appt._id %>" method="POST">
+                                            <form action="/student/cancelAppointment/<%= appt._id %>" method="POST" style="margin: 0;">
                                                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     onclick="return confirm('Are you sure you want to cancel this appointment?')">
                                                     Cancel
                                                 </button>
                                             </form>
+                                            <% if (googleConnected) { %>
+                                                <% if (appt.googleCalendarEventId) { %>
+                                                    <span class="badge badge-completed">synced</span>
+                                                <% } else { %>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="addToGoogleCalendar('<%= appt._id %>'); return false;">
+                                                        📅 Add to Calendar
+                                                    </button>
+                                                <% } %>
+                                            <% } %>
                                         <% } else { %>
                                             <span class="text-muted" style="font-size:0.85rem;">—</span>
                                         <% } %>
@@ -223,5 +251,61 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function disconnectGoogleCalendar() {
+    if (confirm('Disconnect Google Calendar? You will need to reconnect to add more appointments.')) {
+        fetch('/student/disconnectGoogleCalendar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Google Calendar disconnected. Refreshing...');
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to disconnect'));
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Failed to disconnect');
+        });
+    }
+}
+
+function addToGoogleCalendar(appointmentId) {
+    if (confirm('Add this appointment to your Google Calendar?')) {
+        fetch(`/student/addToGoogleCalendar/${appointmentId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'CSRF-Token': '<%= csrfToken %>'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(`${data.alreadySynced ? 'Appointment was already synced' : 'Appointment added to Google Calendar'}${data.googleAccountEmail ? ' (' + data.googleAccountEmail + ')' : ''}${data.createdEventId ? '\nEvent ID: ' + data.createdEventId : ''}.`);
+                window.location.reload();
+                if (data.calendarHomeUrl) {
+                    window.open(data.calendarHomeUrl, '_blank');
+                }
+            } else {
+                alert('Error: ' + (data.error || 'Failed to add event'));
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Failed to add event to Google Calendar');
+        });
+    }
+}
+</script>
+
 </body>
 </html>

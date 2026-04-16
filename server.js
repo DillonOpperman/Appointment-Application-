@@ -94,6 +94,7 @@ app.set('views', path.join(__dirname, 'Views'));
 app.use('/assets', express.static(path.join(__dirname, 'Assets')));
 
 // Routes 
+app.use('/auth', authRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/', adminRoutes);
 app.use('/', studentRoutes);

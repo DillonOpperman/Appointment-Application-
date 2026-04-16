@@ -26,6 +26,20 @@ const userSchema = new mongoose.Schema(
         active: {
             type: Boolean,
             default: true
+        },
+        googleRefreshToken: {
+            type: String,
+            default: null
+        },
+        googleAccessToken: {
+            type: String,
+            default: null
+        },
+        googleAccountEmail: {
+            type: String,
+            default: null,
+            lowercase: true,
+            trim: true
         }
     },
     { timestamps: true }

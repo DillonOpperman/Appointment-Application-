@@ -69,6 +69,15 @@ const appointmentSchema = new mongoose.Schema(
         },
         actualEnd: {
             type: Date
+        },
+        googleCalendarEventId: {
+            type: String,
+            default: null,
+            trim: true
+        },
+        googleCalendarSyncedAt: {
+            type: Date,
+            default: null
         }
     },
     { timestamps: true }

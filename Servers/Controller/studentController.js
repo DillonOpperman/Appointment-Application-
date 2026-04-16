@@ -5,6 +5,7 @@ const User = require('../Model/User');
 //onst AuditLog = require('../Model/AuditLog');
 const bcrypt = require('bcryptjs');
 const { sendBookingConfirmation, sendCancellationConfirmation } = require('../middleware/emailService');
+const { deleteEventFromCalendar, deleteMatchingEventsFromCalendar } = require('../middleware/googleCalendar');
 
 function combineDateAndTime(dateObj, timeString) {
     const raw = String(timeString || '').trim();
@@ -358,7 +359,7 @@ exports.showHome = async (req, res) => {
 
 exports.showDashboard = async (req, res) => {
     try {
-        const student = await User.findById(req.user.id).select('name email');
+        const student = await User.findById(req.user.id).select('name email googleRefreshToken googleAccountEmail');
         if (!student) return res.redirect('/studentLogin');
 
         const appointments = await Appointment.find({ student: student._id })
@@ -425,7 +426,9 @@ exports.showDashboard = async (req, res) => {
             )
         ).sort((a, b) => a.start - b.start).slice(0, 40);
 
-        const notice = req.query.booked === '1'
+        const notice = req.query.google_connected === '1'
+            ? 'Google Calendar connected successfully.'
+            : req.query.booked === '1'
             ? 'Appointment booked successfully!'
             : req.query.cancelled === '1'
                 ? 'Appointment cancelled successfully.'
@@ -435,17 +438,26 @@ exports.showDashboard = async (req, res) => {
                         ? 'That appointment is already cancelled.'
                         : req.query.error === 'student_conflict'
                             ? 'You already have an appointment at that time. Please choose a different slot.'
+                            : req.query.error === 'oauth_failed'
+                                ? 'Google Calendar authorization failed. Please try again.'
+                                : req.query.error === 'oauth_state_mismatch'
+                                    ? 'Google Calendar authorization did not match the signed-in student.'
                             : null;
 
-        const noticeType = req.query.booked === '1' ? 'success' :
+        const noticeType = req.query.google_connected === '1' ? 'success' :
+                           req.query.booked === '1' ? 'success' :
                            req.query.cancelled === '1' ? 'warning' : 'error';
+
+        const googleConnected = !!student.googleRefreshToken;
 
         return res.render('Student/dashboard', {
             student,
             appointments,
             availableSlots,
             notice,
-            noticeType
+            noticeType,
+            googleConnected,
+            googleAccountEmail: student.googleAccountEmail || null
         });
     } catch (error) {
         console.error(error);
@@ -455,7 +467,7 @@ exports.showDashboard = async (req, res) => {
 
 exports.cancelAppointment = async (req, res) => {
     try {
-        const student = await User.findById(req.user.id).select('name email');
+        const student = await User.findById(req.user.id).select('name email googleRefreshToken');
         if (!student) return res.redirect('/studentLogin');
 
         const appointment = await Appointment.findOne({
@@ -466,6 +478,28 @@ exports.cancelAppointment = async (req, res) => {
 
         if (!appointment) {
             return res.redirect('/studentDashboard?error=already_cancelled');
+        }
+
+        if (student.googleRefreshToken) {
+            if (appointment.googleCalendarEventId) {
+                const deleteResult = await deleteEventFromCalendar(student.googleRefreshToken, appointment.googleCalendarEventId);
+                if (deleteResult.success) {
+                    appointment.googleCalendarEventId = null;
+                    appointment.googleCalendarSyncedAt = null;
+                }
+            } else {
+                const fallbackSummary = `${appointment.course} with ${appointment.tutor ? appointment.tutor.name : 'Tutor'}`;
+                const fallbackResult = await deleteMatchingEventsFromCalendar(student.googleRefreshToken, {
+                    summary: fallbackSummary,
+                    start: appointment.start,
+                    end: appointment.end
+                });
+
+                if (fallbackResult.success && fallbackResult.deletedCount > 0) {
+                    appointment.googleCalendarEventId = null;
+                    appointment.googleCalendarSyncedAt = null;
+                }
+            }
         }
 
         appointment.status = 'cancelled';

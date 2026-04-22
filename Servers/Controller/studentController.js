@@ -77,38 +77,6 @@ async function authenticateOrCreateStudent(studentEmail, studentPassword) {
     return { student };
 }
 
-   /* commented out for now since it could be a potentiall security vulnerability 
-
-   if (student && student.role !== 'student') {
-        return { error: 'That email belongs to a non-student account.' };
-    }
-
-    if (student && !student.active) {
-        return { error: 'This student account is inactive. Please contact an admin.' };
-    }
-
-    if (student) {
-        const isMatch = await bcrypt.compare(trimmedPassword, student.passwordHash);
-        if (!isMatch) {
-            return { error: 'Invalid email/password for this student account.' };
-        }
-        return { student };
-    }
-
-    const passwordHash = await bcrypt.hash(trimmedPassword, 12);
-    const fallbackName = normalizedEmail.split('@')[0] || 'Student';
-    student = await User.create({
-        role: 'student',
-        name: fallbackName,
-        email: normalizedEmail,
-        passwordHash,
-        active: true
-    });
-
-    return { student };
-}
-*/
-
 async function createAppointmentForSlot({ tutorId, course, start, end, student }) {
     const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id name');
     if (!tutor) {
@@ -144,18 +112,6 @@ const studentOverlap = await Appointment.findOne({
 if (studentOverlap) {
     return { errorCode: 'student_conflict' };
 }
-
-    /*const overlap = await Appointment.findOne({
-        tutor: tutor._id,
-        status: 'booked',
-        start: { $lt: endDate },
-        end: { $gt: startDate }
-    }).select('_id');
-
-    if (overlap) {
-        return { errorCode: 'slot_taken' };
-    }
-    */
 
 
     const appointment = await Appointment.create({
@@ -505,18 +461,6 @@ exports.cancelAppointment = async (req, res) => {
         appointment.status = 'cancelled';
         await appointment.save();
 
-        await AuditLog.create({
-            actor: student._id,
-            action: 'cancel_appointment',
-            targetType: 'Appointment',
-            targetId: appointment._id,
-            metadata: {
-                tutorId: appointment.tutor._id,
-                course: appointment.course,
-                startTime: appointment.start,
-                endTime: appointment.end
-            }
-        });
 
         sendCancellationConfirmation({
             studentEmail: student.email,

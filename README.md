@@ -1,45 +1,50 @@
 # IT Learning Center Appointment System
 
-Web application for managing tutoring appointments at the IT Learning Center. This project is currently built as a Node.js + Express server-rendered app using EJS templates and MongoDB.
+Web application for managing tutoring appointments at the IT Learning Center. Node.js + Express + MongoDB, server-rendered with EJS.
 
 ## Overview
 
 The system supports three authenticated roles:
 
-- Student: browse available tutor slots, book appointments, cancel appointments, and view booking history.
-- Tutor: view assigned appointments, cancel booked appointments, and record session outcomes/notes.
-- Admin: manage users, manage tutor availability blocks, reschedule/cancel appointments, and review audit/notification logs.
+- **Student**: browse available tutor slots, book appointments, cancel appointments, view booking history, and optionally sync appointments to Google Calendar.
+- **Tutor**: view assigned appointments, cancel booked appointments, record session outcomes/notes and actual start/end times.
+- **Admin**: manage users, manage tutor availability blocks, reschedule/cancel any appointment, and review audit/notification logs.
 
 It also includes a public home page that shows upcoming available tutoring slots.
 
-## Current Tech Stack
+## Tech Stack
 
 - Node.js + Express
 - MongoDB + Mongoose
 - EJS templates (server-rendered UI)
-- JSON Web Tokens (JWT) for auth
+- JSON Web Tokens (JWT) for auth, stored in HttpOnly cookies
 - bcryptjs for password hashing
+- express-rate-limit for login throttling
+- csurf + cookie-parser for CSRF protection
 - Nodemailer (Gmail SMTP) for email notifications
+- googleapis for Google Calendar OAuth 2.0 sync
 
 ## Features
 
 - Role-based dashboards: student, tutor, admin
 - Appointment lifecycle: book, cancel, complete, no-show
 - Tutor session notes and actual start/end capture
-- Availability blocks with recurring and exception/blackout support
-- Email notifications:
-  - Booking confirmations
-  - Cancellation notifications
-  - Automated reminders for upcoming appointments (scheduled worker)
-- Audit logging for administrative and session actions
-- Notification logging for outbound email events
+- Availability blocks with recurring (weekly) and date-specific/blackout exceptions
+- Overlap prevention for both tutors and students on booking and rescheduling
+- Email notifications: booking confirmations, cancellation notifications, and automated 24-hour reminders (scheduled worker)
+- Google Calendar sync: students can optionally connect their Google account to auto-sync booked appointments; cancellations remove the synced event
+- Audit logging for administrative, booking, cancellation, and tutor session actions
+- Notification logging for outbound email events (sent/failed)
+- Rate limiting on all login endpoints
+- CSRF protection on every POST form
 
 ## Prerequisites
 
-- Node.js 18+ recommended
+- Node.js 18+
 - npm
 - MongoDB (local or Atlas)
 - Git
+- A Google Cloud OAuth client (only required for Google Calendar sync — see below)
 
 ## Quick Start
 
@@ -50,19 +55,19 @@ git clone https://github.com/DillonOpperman/Appointment-Application-.git
 cd Appointment-Application-
 ```
 
-2. Install dependencies from the project root:
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Create environment file from template:
+3. Create the environment file from the template:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Update `.env` values (see Environment Variables section).
+4. Update `.env` with your values (see Environment Variables section).
 
 5. Start the app:
 
@@ -70,17 +75,11 @@ cp .env.example .env
 npm start
 ```
 
-For development with automatic restart:
-
-```bash
-npm run dev
-```
-
-Default app URL: http://localhost:3001
+Default URL: http://localhost:3001
 
 ## Environment Variables
 
-Required values are defined in `.env.example`:
+Required values:
 
 ```env
 PORT=3001
@@ -88,38 +87,61 @@ MONGODB_URI=<your-mongodb-connection-string>
 JWT_SECRET=<long-random-secret>
 ```
 
-Additional variables used for email notifications:
+Email notifications:
 
 ```env
 GMAIL_ADMIN=<gmail-address>
 GMAIL_APP_PASSWORD=<gmail-app-password>
 ```
 
+Google Calendar (optional — required only for the student calendar-sync feature):
+
+```env
+GOOGLE_CLIENT_ID=<oauth-client-id>
+GOOGLE_CLIENT_SECRET=<oauth-client-secret>
+GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
+```
+
 Notes:
 
-- `MONGODB_URI` is required at startup.
-- If Gmail vars are missing/invalid, booking/cancellation/reminder emails will fail.
+- `MONGODB_URI` and `JWT_SECRET` are required at startup.
+- If Gmail vars are missing or invalid, email notifications will fail silently (logged to the Notification Log).
 - Never commit `.env` to source control.
 
+## Google Calendar Setup
+
+To enable the student Google Calendar sync feature:
+
+1. Add the Google OAuth credentials to your `.env` (values are shared inside the team):
+
+   ```env
+   GOOGLE_CLIENT_ID=<shared-client-id>
+   GOOGLE_CLIENT_SECRET=<shared-client-secret>
+   GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
+   ```
+
+2. Start the server and log in as a student account.
+
+3. On the student dashboard, click **Connect Google Calendar**.
+
+   - You may see an "unverified app" warning — click **Advanced → Go to Appointment App (unsafe)** to proceed.
+   - You only need to do this once per student account.
+
+4. After connecting, booked appointments will show an **Add to Calendar** button. Cancelling a synced appointment automatically removes it from Google Calendar.
+
+**Tip:** To actually see the sync in Google Calendar, the test student account's email should match a Gmail address you can log into. Have an admin create a student account using your personal Gmail, then sign in as that student.
+
 ## Running Locally
-
-1. Ensure MongoDB is available (local instance or Atlas).
-2. Ensure `.env` is configured.
-3. Run:
-
-```bash
-npm start
-```
 
 On startup the server:
 
 - Connects to MongoDB
-- Seeds test users if missing
+- Seeds test users if they don't already exist (skipped when `NODE_ENV=production`)
 - Starts a reminder worker that checks upcoming appointments every 15 minutes
 
 ## Seeded Test Users
 
-On first successful startup, the app seeds these users (if they do not already exist):
+In non-production environments, the app seeds these users on first startup:
 
 - `testuser_admin@example.com` (admin)
 - `testuser_tutor@example.com` (tutor)
@@ -132,13 +154,19 @@ On first successful startup, the app seeds these users (if they do not already e
 
 Mounted under `/api/auth`:
 
-- `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 
+### Google OAuth routes
+
+Mounted under `/auth`:
+
+- `GET /auth/google` — starts the OAuth flow for the signed-in student
+- `GET /auth/google/callback` — receives the auth code and stores the refresh token
+
 ### Page routes
 
-Public/student:
+Public / student:
 
 - `GET /home`
 - `GET /studentLogin`
@@ -146,6 +174,8 @@ Public/student:
 - `GET /studentDashboard`
 - `POST /student/bookAppointment`
 - `POST /student/cancelAppointment/:id`
+- `POST /student/addToGoogleCalendar/:appointmentId`
+- `POST /student/disconnectGoogleCalendar`
 
 Tutor:
 
@@ -167,7 +197,7 @@ Admin:
 - `POST /addUser`
 - `POST /toggleUserActive/:id`
 
-Auth/session utility:
+Auth / session utility:
 
 - `GET /logout`
 
@@ -179,7 +209,7 @@ Appointment-Application-/
 |-- package.json
 |-- .env.example
 |-- Assets/
-|   |-- CSS/
+|   |-- css/
 |   |-- JS/
 |   `-- images/
 |-- Views/
@@ -187,8 +217,7 @@ Appointment-Application-/
 |   |-- Student/
 |   |-- Tutor/
 |   |-- Home/
-|   |-- Includes/
-|   `-- html/
+|   `-- Includes/
 |-- Servers/
 |   |-- Controller/
 |   |-- Database/
@@ -198,88 +227,86 @@ Appointment-Application-/
 `-- scripts/
 ```
 
-## Security Notes
+## Security
 
-- Passwords are stored as bcrypt hashes.
-- JWT tokens are issued at login and stored in an `HttpOnly` cookie (`auth_token`).
-- Role checks are enforced in route middleware.
+The application implements the following controls:
+
+- **Authentication**: JWT issued on login, stored in an HttpOnly cookie (`auth_token`).
+- **Password handling**: bcrypt hashing (cost factor 12); no plaintext passwords anywhere in the codebase or database.
+- **Authorization**: every protected route re-queries the database for the current user's role and `active` status rather than trusting the JWT payload — a deactivated user's existing token stops working immediately.
+- **Public registration removed**: only authenticated admins can create accounts. The `/addUser` endpoint rejects any attempt to create `admin` roles via request body tampering.
+- **Rate limiting**: all login endpoints (`/submitAdminLogin`, `/submitStudentLogin`, `/submitTutorLogin`, `/api/auth/login`) are throttled to 5 attempts per minute per IP via `express-rate-limit`.
+- **CSRF protection**: all POST forms include a CSRF token validated by `csurf` middleware.
+- **OAuth state check**: the Google Calendar callback rejects any request whose `state` does not match the signed-in student's user ID, preventing CSRF during OAuth.
+- **Conflict prevention**: booking and admin rescheduling both validate tutor overlap and student overlap against the database before committing.
+- **Availability block overlap check**: admins cannot create overlapping weekly or date-specific availability blocks for the same tutor.
+- **Audit trail**: every admin action (cancel, edit, add user, deactivate user, add/delete availability) and every student/tutor session event is recorded in the `AuditLog` collection.
+- **Notification trail**: every outbound email (sent or failed) is recorded in the `NotificationLog` collection.
+- **Secrets**: all credentials live in `.env` (gitignored); no secrets are hard-coded.
 
 ## Troubleshooting
 
-- Startup fails with Mongo error:
-  - Verify `MONGODB_URI` is set and reachable.
-- Login token errors:
-  - Verify `JWT_SECRET` is present and consistent.
-- Email not sending:
-  - Verify `GMAIL_ADMIN` and `GMAIL_APP_PASSWORD`.
-  - For Gmail, use an app password (2FA enabled).
+- **Startup fails with Mongo error**: verify `MONGODB_URI` is set and reachable.
+- **Login token errors**: verify `JWT_SECRET` is present and consistent across restarts.
+- **Email not sending**: verify `GMAIL_ADMIN` and `GMAIL_APP_PASSWORD`. For Gmail, use an App Password (requires 2FA enabled).
+- **Google Calendar "Cannot GET /auth/google"**: verify `authRoutes` is mounted at `/auth` in `server.js`.
+- **Google Calendar "Missing required parameter: client_id"**: the three `GOOGLE_*` vars are missing from your `.env`.
 
-## Development Notes
+AI tools were used for some parts of this project. The list below covers the bigger code and design work.
 
-- Main entry point: `server.js`
-- Static assets are served from `/assets`
-- EJS views are loaded from `Views/`
-- Reminder worker runs automatically in-process after startup
+Auth and login
 
-## AI Use
+Built JWT login using HttpOnly cookies with role-based checks that always recheck the database to make sure the user is still active.
+Added a global middleware that reads the JWT cookie on every request so we always know who's logged in, plus a shared header that works for all roles.
+Helped fix a "login failed" error turned out they were missing JWT_SECRET in their .env file.
 
-GitHub Copilot Chat was used for selected implementation and maintenance tasks.
+Database models
 
-AI-assisted parts:
-- App setup and run steps (Feb 19): identified Node.js/Express stack, provided install/start commands, bypassed PowerShell execution-policy issue.
-- Tutor folder and login page (Feb 19): created `htmlFiles/tutuor/TutorPage.html` matching the style of the student and admin login pages.
-- Tutor server routes (Feb 19): added `GET /tutorLogin` and `POST /submitTutorLogin` to `server.js`; fixed stray space in the admin file path.
-- Project structure migration to Stefan-style folders (`Assets`, `Servers`, `Views`) and path updates.
-- Auth/database integration tasks (Atlas connection wiring, bcrypt/JWT route support, middleware and model path updates).
-- Tutor/admin UI and navigation fixes (theme links, dashboard text visibility, route/nav corrections).
-- Git workflow assistance for branch sync, test-run checks, and push operations.
-- Tutor feature implementation (appointments tab, availability/blackout block create-delete flow, tutor-scoped route/controller wiring).
-- Security hardening for page auth (JWT `HttpOnly` cookie flow, role-based middleware guards, logout cookie clearing, protected route checks).
-- Seed-user automation for demo/test accounts (`testuser_admin`, `testuser_tutor`, `testuser_student`) and startup verification.
-- Presentation documentation assistance (Mar 17): file-by-file code explanations, CRUD/RBAC/data-layer mapping, and professor Q&A preparation notes. No code was changed during these sessions.
-- Audit log enhancement (Mar 17): updated `cancelAppointment` to populate and store student and tutor emails in AuditLog `metadata` for traceability.
-- Admin appointment editing (Mar 17): added `editAppointment` controller, route (`POST /admin/appointment/edit/:id`), Edit button alongside Cancel in the appointments table, and a modal with datetime-local inputs and client-side pre-fill JS.
-- Tutor view hardening (Mar 17): removed Cancel button and Action column from tutor dashboard; tutor appointments view is now fully read-only.
-- Admin appointment filter bar (Mar 17): added client-side filter dropdowns (Date newest/oldest, Student A→Z/Z→A, Course) with a Clear button above the admin appointments table; no server round-trip required.
-- Git sync and app run verification (Mar 18): fetched and fast-forward pulled `origin/main` (commit `486a185`); diagnosed PowerShell execution-policy issue and switched to `npm.cmd`; reinstalled 65 packages after pull-triggered `node_modules` loss; confirmed server boot (`MongoDB connected`, port 3001) and clean shutdown.
-- Teammate onboarding and login debugging (Mar 18): generated teammate-specific `MONGODB_URI` and full `.env` template using existing cluster/DB; diagnosed "login failed" error by tracing `adminController.submitLogin`, JWT middleware, and `User` model; identified missing `JWT_SECRET` as root cause; provided exact `.env` fix. Server seed changes were explored but reverted — resolved purely via `.env` correction.
-- Automated email planning (Mar 18): recommended Nodemailer + Gmail App Password for booking confirmation emails; outlined install step, required `.env` vars, `mailer.js` utility design, and `studentController.js` integration point. Implementation deferred to a future session.
-- App run, main pull, and email wiring (Mar 19): launched app via `node server.js` bypassing PowerShell execution-policy block; fetched and fast-forward pulled `origin/main` (2 commits — new `emailService.js` and merged stefan/admin-mvc PR); installed `nodemailer` after confirming it was added to `package.json` by the pull; added `GMAIL_ADMIN` and `GMAIL_APP_PASSWORD` to root `.env`; updated `.env.example` with placeholder entries for both vars; restarted server and verified booking confirmation email sent successfully.
-- 12-hour time format migration (Mar 19): updated all `toLocaleString()` calls across four EJS views to use `{ hour12: true }`; created and ran a one-time migration script (`scripts/migrateAvailabilityTimesTo12h.js`) to reformat 5 existing MongoDB AvailabilityBlock documents from HH:mm to h:mm AM/PM.
-- Requirements compliance audit (Mar 19): reviewed all four role sections of the project rubric against the codebase; identified missing student cancel endpoint, unwired cancellation emails, and absent reminder emails as the only gaps. No code changes — findings used to drive next tasks.
-- Cancellation email wiring (Mar 19): imported and called `sendCancellationConfirmation` in both `adminController.js` and `tutorController.js` cancel handlers; both now populate student and tutor names/emails and fire the email after a successful DB update.
-- Appointment reminder worker (Mar 19): added `sendAppointmentReminder()` to `emailService.js`; added `sendUpcomingAppointmentReminders()` and `startReminderWorker()` (15-minute interval, deduplication via `NotificationLog`) to `server.js`; worker fires immediately on startup.
-- Branch management and Stefan student dashboard merge (Mar 19): pulled `origin/main` (Rudra's PR #11), reverted it locally, then fetched and merged Stefan's new commit `0251b6f` which added the full student dashboard view (`Views/Student/dashboard.ejs`), booking, and cancellation routes/controller logic; pushed result to `origin/Dillon`.
-- Appointment audit logging (Mar 19): added `AuditLog` import to `studentController.js`; wired audit log entries for both `book_appointment` and `cancel_appointment` actions, capturing actor (student), target appointment ID, tutor ID, course, and time window — ensures every booking and cancellation is traceable in the database.
-- Git push to Dillon branch (Mar 19): committed audit-logging changes, pulled remote Dillon to resolve ahead/behind state, and pushed final result to `origin/Dillon`.
-- Logout flow (Mar 20): centralized `/logout` route in `server.js` (clears `auth_token` cookie, redirects to `/home`); removed duplicate logout from `tutorRoutes.js`; added global JWT-decoding middleware in `server.js` so `res.locals.currentUser` is always populated from the cookie.
-- Role-aware shared header (Mar 20): rewrote `Views/Includes/_header.ejs` to show Dashboard + Logout when authenticated and the Sign-in link when guest; reads user identity from multiple fallback sources (`res.locals.currentUser`, template `user` variable, `activeTab` context detection); added explicit `currentUser` pass-through in `adminController.showDashboard`.
-- Add-user UX fix (Mar 20): traced the "new user not appearing" issue to a silent redirect to the Appointments tab after save; all `/addUser` outcomes now redirect to `?tab=users` with human-readable `notice` and `noticeType` query params (success, duplicate warning, validation error).
-- Comprehensive logs audit and readable-names overhaul (Mar 20): audited all four collections end-to-end; added helper functions (`buildAuditLogEntries`, `summarizeAuditLog`, `summarizeNotificationLog`, `formatDateTime`, `formatAppointmentLabel`, `formatAvailabilityLabel`) to `adminController.js`; enriched every `AuditLog.create()` call with `studentName`, `tutorName`, `course`; added previously missing audit events (`createUser`, `addAvailability`, `deleteAvailability`); added `recipientName` field to `NotificationLog` schema; rewrote all three email-send functions in `emailService.js` to use a `sendMailWithLog()` wrapper that logs start, success, and failure with readable summaries.
-- Admin Activity Logs tab (Mar 20): added a `logs` sidebar button and full tab section in `Views/Admin/dashboard.ejs`; tab contains two tables — Audit Log (Time, Actor, Action, Target, Summary) and Notification Log (Time, Event, Recipient, Status badge, Summary) — populated from the last 25 entries of each collection per page load.
-- Named appointment action banners (Mar 20): `cancelAppointment` and `editAppointment` redirects now include the student and tutor names in the `notice` query param; appointments tab in `dashboard.ejs` now renders the banner (matching the existing hours/users tab pattern).
-- Denormalized names in MongoDB documents (Mar 20): added `studentName` and `tutorName` string fields to the `Appointment` schema and `actorName` to the `AuditLog` schema so Atlas shows readable names alongside ObjectId refs; added `name` to the JWT payload in all four sign locations so `req.user.name` is available in every controller; populated all new fields at create time across all three controllers.
-- Git push — tracked file changes (Mar 21): staged and committed 12 modified files (controllers, routes, models, middleware, views, `server.js`) as "Update controllers, routes, models, and dashboard changes" (commit `74ed481`); pushed to `origin/Dillon`.
-- `.gitignore` cookie exclusion (Mar 21): appended `admincookies.txt`, `cookies.txt`, and `studentcookies.txt` to `.gitignore` so local session files are never tracked; committed (commit `3d1f895`) and pushed to `origin/Dillon`.
-- README rewrite (Mar 27): rewrote README from scratch to reflect the actual Express+EJS architecture, real routes, correct env vars (`GMAIL_ADMIN`, `GMAIL_APP_PASSWORD`), seeded test users, and folder structure. Verified by Dillon.
-- Git merge workflow and conflict resolution (Mar 27): merged Dillon into main (resolved two-file conflict: kept rewritten README, kept Dillon's studentController); diagnosed and fixed two post-merge startup bugs (duplicate `AuditLog` import in `studentController.js`, broken route handlers in `studentRoutes.js`). Verified by Dillon.
-- Branch sync and cleanup (Mar 27): moved fixes onto Dillon branch via stash/apply; resolved leftover stash conflict markers in `studentRoutes.js`; merged main back into Dillon (commit `fe51ffd`) resolving studentRoutes conflict by retaining Dillon's modern handlers. Verified by Dillon.
-- HTTP route testing (Mar 27): ran full `Invoke-WebRequest` test suite against `localhost:3001` covering 12 routes (public pages, auth API login for all three roles, protected dashboard redirects, wrong-password rejection). All tests passed both before and after the main-into-Dillon merge. Verified by Dillon.
-- App run (Apr 9): read `package.json` to confirm available scripts; attempted `npm run dev` — blocked by PowerShell execution-policy restriction on `npm.ps1`; switched to `node server.js` directly; confirmed MongoDB connected and server on port 3001. Verified by Dillon.
-- Audit/notification log display fix (Apr 16): mapped raw Mongoose docs in `adminController.js` to `actorDisplayName`, `targetLabel`, and `summary` fields for the admin Audit Log table; mapped `recipientDisplayName` and `summary` (derived from `providerResponse.messageId`) for the Notification Log table so readable names appear instead of ObjectId strings. Verified by Dillon.
-- Google Calendar OAuth integration (Apr 16): added full OAuth 2.0 flow using the `googleapis` npm package (scopes: `calendar.events`, `userinfo.email`); created `Servers/middleware/googleCalendar.js` with helper functions for auth URL generation, token exchange, email lookup, event creation, and event deletion; extended the `User` model with `googleRefreshToken`, `googleAccessToken`, and `googleAccountEmail`; extended the `Appointment` model with `googleCalendarEventId` and `googleCalendarSyncedAt`; added `/auth/google` and `/auth/google/callback` routes to `authRoutes.js`; added `/student/addToGoogleCalendar/:appointmentId` and `/student/disconnectGoogleCalendar` POST routes to `studentRoutes.js`; mounted `authRoutes` at `/auth` in `server.js`; updated `studentController.showDashboard` to pass `googleConnected` and `googleAccountEmail` to the view; updated `Views/Student/dashboard.ejs` with a Connect banner (when not connected), a Disconnect button with connected-account email display (when connected), an Add to Calendar button for unsynced booked appointments, a synced badge for already-synced appointments, and client-side JS for both actions. Fixed "Cannot GET /auth/google" by also mounting `authRoutes` at `/auth` in `server.js`. Verified by Dillon.
-- Google Calendar deep-link fix and email capture (Apr 16): switched from Google Calendar event deep-links to the calendar home URL (`calendar.google.com/calendar/u/0/r?authuser=...`) to avoid multi-account browser "could not find event" errors; added `userinfo.email` to OAuth scopes so the connected account email is captured reliably at callback time and stored on the user record. Verified by Dillon.
-- Google Calendar duplicate prevention and cancellation sync (Apr 16): added `alreadySynced` check to the `addToGoogleCalendar` route — returns early without creating a new event if `googleCalendarEventId` is already set on the appointment; dashboard now shows a synced badge instead of the Add to Calendar button for already-synced appointments; page reloads after a successful add; wired `cancelAppointment` in `studentController.js` to call `deleteEventFromCalendar` (using the stored `eventId`) or a `deleteMatchingEventsFromCalendar` fallback (matches by event title and time window for older records that predate the stored-ID feature). Removed temporary debug scripts and `server.log`. Verified by Dillon.
-- Git push — Google Calendar feature (Apr 16): staged and committed 10 files as "Add Google Calendar OAuth sync and cancellation integration" (commit `fe02379`); pushed to `origin/Dillon`; 10 files changed, 745 insertions. Verified by Dillon.
-- AI documentation update (Apr 20): read both `AI_LOG.md` and `README.md` in full to understand existing entries and established theme; appended Apr 9 and Apr 20 log rows to `AI_LOG.md`; appended matching AI Use bullet points to `README.md`; updated session-dates summary line. No code changed. Verified by Dillon.
+Changed appointment comments to use a proper sub-document array with timestamps.
+Added student/tutor names directly on Appointment and actor name on AuditLog so the data is readable without extra lookups; also added name to the JWT so controllers can use it.
+Added Google-related fields to User and Appointment (calendar event ID, sync timestamp) for Google Calendar support.
 
-Verification:
-- Teammate verifier: Dillon Opperman.
-- Verification method: manual route smoke tests, login/cookie checks, and dashboard action checks during team demo prep.
+Booking logic and professor feedback fixes
 
-Session dates covered in this project log (excluding today): Feb 19, Mar 9, Mar 10, Mar 12, Mar 16, Mar 17, Mar 18, Mar 19, Mar 20, Mar 21, Mar 27, Apr 9, Apr 16, and Apr 20, 2026.
+Removed the code created student accounts during login now only admins can create users.
+Added checks for both tutor and student time conflicts when booking so students can't double-book with different tutors.
+Added overlap checking when creating availability blocks so admins can't accidentally add conflicting time slots.
+Added the same overlap checks to the admin edit appointment flow so rescheduling follows the same rules as booking.
 
-For date-by-date details (tool, prompt summary, output, and follow-up changes), see [AI_LOG.md](AI_LOG.md).
+Email system
+
+Built a sendMailWithLog() helper that saves a log entry every time an email is sent (or fails); rewrote all three email functions (booking, cancel, reminder) to use it.
+Built an automatic reminder system that sends emails 24 hours before appointments, checks the log so it doesn't send duplicates, and runs every 15 minutes.
+
+Google Calendar integration
+
+Full OAuth 2.0 setup with the googleapis package handles the auth URL, token exchange, grabbing the user's Google email, refreshing tokens, and creating/deleting calendar events. Includes a fallback that finds and deletes events by name and time if the event ID wasn't saved.
+Prevents duplicate calendar entries if an appointment is already synced, it skips instead of creating another event.
+When a student cancels, the matching Google Calendar event gets deleted too. For older appointments without a saved event ID, it searches by name and time to find the right one.
+
+Admin dashboard features
+
+Edit appointment modal with date/time pickers that enforces the same overlap rules as booking.
+Filter and sort bar on the appointments table (by date, student name, course) all done in the browser with no page reload.
+Activity Logs tab showing the last 25 audit log and notification log entries with helper functions to turn raw database records into readable text.
+Success/error banners after actions like canceling, editing, or adding users.
+Made sure every important action (create user, add/delete availability, book, cancel, edit) writes an audit log entry with names and course info.
+
+Data migration
+
+One-time script to convert all availability block times from 24-hour format (like 14:00) to 12-hour format.
+
+Security fixes and cleanup 
+
+Fixed the Google OAuth callback so it rejects requests that are missing the state parameter, not just ones with the wrong value (Apr 21).
+Added a check on the add-user route so only student or tutor accounts can be created no one can sneak in an admin role through a manual request. Also added checks for required fields and minimum password length.
+Made it so the test/demo accounts only get created in development mode, not in production.
+Fixed a bug where canceling an appointment wrote two audit log entries instead of one.
+General cleanup: removed duplicate function definitions, old commented-out code, unused route files, and the old HTML files that were replaced by EJS templates (Apr 21).
+
+Verification: team verifier is Dillon Opperman (manual route smoke tests, login/cookie checks, and dashboard action checks during team demo prep).
+
+For the full session-by-session log with dates, prompt summaries, and follow-up changes, see [AI_LOG.md](AI_LOG.md).
 
 ## License
 

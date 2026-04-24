@@ -252,13 +252,12 @@ The application implements the following controls:
 - **Google Calendar "Cannot GET /auth/google"**: verify `authRoutes` is mounted at `/auth` in `server.js`.
 - **Google Calendar "Missing required parameter: client_id"**: the three `GOOGLE_*` vars are missing from your `.env`.
 
-AI tools were used for some parts of this project. The list below covers the bigger code and design work.
-
+AI Tool Usage:
 Auth and login
 
-Built JWT login using HttpOnly cookies with role-based checks that always recheck the database to make sure the user is still active.
+Built JWT login using Http Only cookies with role-based checks that always recheck the database to make sure the user is still active.
 Added a global middleware that reads the JWT cookie on every request so we always know who's logged in, plus a shared header that works for all roles.
-Helped fix a "login failed" error turned out they were missing JWT_SECRET in their .env file.
+Helped fix a "login failed" error turned out they were missing JWT_SECRET in .env file.
 
 Database models
 
@@ -269,7 +268,7 @@ Added Google-related fields to User and Appointment (calendar event ID, sync tim
 Booking logic and professor feedback fixes
 
 Removed the code created student accounts during login now only admins can create users.
-Added checks for both tutor and student time conflicts when booking so students can't double-book with different tutors.
+Added checks for both tutor and student time conflicts when booking so students can't double book with different tutors.
 Added overlap checking when creating availability blocks so admins can't accidentally add conflicting time slots.
 Added the same overlap checks to the admin edit appointment flow so rescheduling follows the same rules as booking.
 
@@ -294,17 +293,17 @@ Made sure every important action (create user, add/delete availability, book, ca
 
 Data migration
 
-One-time script to convert all availability block times from 24-hour format (like 14:00) to 12-hour format.
+One-time script to convert all availability block times from 24-hour formatto 12-hour format.
 
 Security fixes and cleanup 
 
-Fixed the Google OAuth callback so it rejects requests that are missing the state parameter, not just ones with the wrong value (Apr 21).
+Fixed the Google OAuth callback so it rejects requests that are missing the state parameter, not just ones with the wrong value.
 Added a check on the add-user route so only student or tutor accounts can be created no one can sneak in an admin role through a manual request. Also added checks for required fields and minimum password length.
 Made it so the test/demo accounts only get created in development mode, not in production.
 Fixed a bug where canceling an appointment wrote two audit log entries instead of one.
-General cleanup: removed duplicate function definitions, old commented-out code, unused route files, and the old HTML files that were replaced by EJS templates (Apr 21).
+General cleanup: removed duplicate function definitions, old commented-out code, unused route files, and the old HTML files that were replaced by EJS templates.
 
-Verification: team verifier is Dillon Opperman (manual route smoke tests, login/cookie checks, and dashboard action checks during team demo prep).
+Verification: team verifier Dillon Opperman.
 
 For the full session-by-session log with dates, prompt summaries, and follow-up changes, see [AI_LOG.md](AI_LOG.md).
 

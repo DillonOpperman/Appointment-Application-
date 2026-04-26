@@ -70,7 +70,7 @@ async function getTransporter() {
     return transporter;
 }
 
-async function sendBookingConfirmation({ studentEmail, studentName, tutorName, course, start, end, appointmentId }) {
+async function sendBookingConfirmation({ studentEmail, studentName, tutorEmail, tutorName, course, start, end, appointmentId }) {
     const startStr = new Date(start).toLocaleString('en-US', { hour12: true });
     const endStr = new Date(end).toLocaleString('en-US', { hour12: true });
     const transport = await getTransporter();
@@ -132,10 +132,36 @@ async function sendBookingConfirmation({ studentEmail, studentName, tutorName, c
         }
     });
 
+    if (tutorEmail) {
+        await sendMailWithLog({
+            transport,
+            event: 'book',
+            recipientName: tutorName,
+            context,
+            mailOptions: {
+            from: `"IT Learning Center" <${process.env.GMAIL_ADMIN}>`,
+            to: tutorEmail,
+            subject: 'New Appointment Booked - IT Learning Center',
+            html: `
+                <h2>New Appointment Booked</h2>
+                <p>Hi ${tutorName},</p>
+                <p>A student has booked an appointment with you. Here are the details:</p>
+                <ul>
+                    <li><strong>Student:</strong> ${studentName}</li>
+                    <li><strong>Course:</strong> ${course}</li>
+                    <li><strong>Start:</strong> ${startStr}</li>
+                    <li><strong>End:</strong> ${endStr}</li>
+                </ul>
+                <p>- IT Learning Center</p>
+            `
+            }
+        });
+    }
+
     console.log('Booking confirmation emails sent.');
 }
 
-async function sendCancellationConfirmation({ studentEmail, studentName, tutorName, course, start, end, appointmentId }) {
+async function sendCancellationConfirmation({ studentEmail, studentName, tutorEmail, tutorName, course, start, end, appointmentId }) {
     const startStr = new Date(start).toLocaleString('en-US', { hour12: true });
     const endStr = new Date(end).toLocaleString('en-US', { hour12: true });
     const transport = await getTransporter();
@@ -195,6 +221,32 @@ async function sendCancellationConfirmation({ studentEmail, studentName, tutorNa
         `
         }
     });
+
+    if (tutorEmail) {
+        await sendMailWithLog({
+            transport,
+            event: 'cancel',
+            recipientName: tutorName,
+            context,
+            mailOptions: {
+            from: `"IT Learning Center" <${process.env.GMAIL_ADMIN}>`,
+            to: tutorEmail,
+            subject: 'Appointment Cancelled - IT Learning Center',
+            html: `
+                <h2>Appointment Cancelled</h2>
+                <p>Hi ${tutorName},</p>
+                <p>An appointment has been cancelled. Here are the details:</p>
+                <ul>
+                    <li><strong>Student:</strong> ${studentName}</li>
+                    <li><strong>Course:</strong> ${course}</li>
+                    <li><strong>Start:</strong> ${startStr}</li>
+                    <li><strong>End:</strong> ${endStr}</li>
+                </ul>
+                <p>- IT Learning Center</p>
+            `
+            }
+        });
+    }
 
     console.log('Cancellation confirmation emails sent.');
 }

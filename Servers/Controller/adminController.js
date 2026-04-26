@@ -270,6 +270,7 @@ exports.editAppointment = async (req, res) => {
             sendCancellationConfirmation({
                 studentEmail: appointment.student.email,
                 studentName: appointment.student.name || 'Student',
+                tutorEmail: appointment.tutor ? appointment.tutor.email : null,
                 tutorName: appointment.tutor ? appointment.tutor.name : 'Tutor',
                 course: appointment.course,
                 start: appointment.start,
@@ -318,10 +319,11 @@ exports.toggleUserActive = async (req, res) => {
         await user.save();
         await AuditLog.create({
             actor: req.user.id,
+            actorName: req.user.name || 'Admin',
             action: user.active ? 'activate' : 'deactivate',
             targetType: 'User',
             targetId: user._id,
-            metadata: { updatedBy: 'admin' }
+            metadata: { updatedBy: 'admin', targetName: user.name, targetEmail: user.email }
         });
         res.redirect('/adminDashboard');
     } catch (err) {

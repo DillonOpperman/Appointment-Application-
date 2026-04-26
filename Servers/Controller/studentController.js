@@ -110,7 +110,7 @@ async function authenticateOrCreateStudent(studentEmail, studentPassword) {
 */
 
 async function createAppointmentForSlot({ tutorId, course, start, end, student }) {
-    const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id name');
+    const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id name email');
     if (!tutor) {
         return { errorCode: 'invalid_tutor' };
     }
@@ -173,6 +173,7 @@ if (studentOverlap) {
     sendBookingConfirmation({
         studentEmail: student.email,
         studentName: student.name,
+        tutorEmail: tutorUser ? tutorUser.email : null,
         tutorName: tutorUser ? tutorUser.name : 'Your Tutor',
         course: appointment.course,
         start: appointment.start,
@@ -474,7 +475,7 @@ exports.cancelAppointment = async (req, res) => {
             _id: req.params.id,
             student: student._id,
             status: 'booked'
-        }).populate('tutor', 'name');
+        }).populate('tutor', 'name email');
 
         if (!appointment) {
             return res.redirect('/studentDashboard?error=already_cancelled');
@@ -521,6 +522,7 @@ exports.cancelAppointment = async (req, res) => {
         sendCancellationConfirmation({
             studentEmail: student.email,
             studentName: student.name,
+            tutorEmail: appointment.tutor ? appointment.tutor.email : null,
             tutorName: appointment.tutor ? appointment.tutor.name : 'Your Tutor',
             course: appointment.course,
             start: appointment.start,

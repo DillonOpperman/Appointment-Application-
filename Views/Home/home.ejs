@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--Created by Stephany ALcaide and Edited by Stephany and Rudra-->
 <html lang="en">
 
 <head>
@@ -14,11 +15,11 @@
         rel="stylesheet">
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+             font-family: 'Merriweather', serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: linear-gradient(135deg, #e92121, #ffffff);
+            background: linear-gradient( #d15959, #e7abab, #d15959, #ce5b5b );
         }
 
         h1,
@@ -26,35 +27,44 @@
         h3,
         h4 {
             font-family: 'Merriweather', serif;
+             color: #330202;
         }
 
 
-        .navbar-custom {
-            background-color: #fcfbfb;
-        }
+            .navbar-custom {
+              background-color: white;
+    }
 
-        .navbar-custom .navbar-brand {
-            display: flex;
-            align-items: center;
-            color: #e92121;
-            font-weight: 700;
-        }
+    .navbar-custom .navbar-brand {
+        display: flex;
+        align-items: center;
+        color: #b71c1c;
+        font-weight: 600;
+        font-size: 25px;
+        font-style: italic;
+     
+        font-family: 'Merriweather', serif;
+    }
 
-        .navbar-custom .navbar-brand img {
-            height: 45px;
-            margin-right: 10px;
-        }
+    .navbar-custom .navbar-brand img {
+        height: 65px;
+        margin-right: 17px;
+    }
 
-        .navbar-custom .nav-link {
-            color: #b71c1c;
-            font-weight: 500;
-            margin-left: 15px;
-        }
+    .navbar-custom .nav-link {
+        color: #b71c1c;
+        font-weight: 800;
+        margin-left: 15px;
+        font-family: 'Merriweather', serif;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
 
-        .navbar-custom .nav-link:hover {
-            color: rgb(126, 14, 14);
-            text-decoration: underline;
-        }
+    .navbar-custom .nav-link:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+    }
 
 
         .carousel-container {
@@ -71,7 +81,7 @@
         }
 
         .appointments-section h2 {
-            color: #7d1c1c;
+            color: #b71c1c;
         }
 
         .slot-table td,
@@ -112,11 +122,12 @@
 
 
         .footer {
-            background-color: #b71c1c;
-            color: white;
+            color: #b71c1c;
             text-align: center;
             padding: 15px 0;
             margin-top: auto;
+            background-color: white;
+            font-family: 'Merriweather', serif;
         }
 
         @media (max-width: 992px) {
@@ -124,6 +135,55 @@
                 grid-template-columns: 1fr;
                 min-width: 220px;
             }
+        }
+/* testimonial styling */
+                .testimonials-section {
+          padding: 60px 20px;
+          text-align: center;
+        }
+
+        .section-title {
+          font-size: 28px;
+          margin-bottom: 20px;
+          font-weight: 600;
+        }
+
+        .testimonials-container {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+
+        .testimonial-card {
+          background: rgb(245, 215, 215);
+          padding: 20px;
+          width: 280px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(180, 70, 70, 0.712);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .testimonial-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .testimonial-text {
+          font-size: 14px;
+          margin-bottom: 15px;
+          color: #0c0c0c;
+        }
+
+        .testimonial-author {
+          display: flex;
+          flex-direction: column;
+          font-size: 13px;
+          color: #080808;
+        }
+
+        .name {
+          font-weight: bold;
         }
     </style>
 </head>
@@ -172,6 +232,45 @@
         </div>
     </div>
 
+    <!-- Testimonials Section -->
+<section class="testimonials-section">
+  <h2 class="section-title">What Students Are Saying</h2>
+
+  <div class="testimonials-container">
+
+    <div class="testimonial-card">
+      <p class="testimonial-text">
+        “Booking tutoring sessions have changed my grade in IT 330.”
+      </p>
+      <div class="testimonial-author">
+        <span class="name">— Xander Rox.</span>
+        <span class="course">IT 330 Student</span>
+      </div>
+    </div>
+
+    <div class="testimonial-card">
+      <p class="testimonial-text">
+        “The tutors are really helpful and the schedule system makes everything super helpful and easy.”
+      </p>
+      <div class="testimonial-author">
+        <span class="name">— Carly Lisa.</span>
+        <span class="course">Web App Dev Major</span>
+      </div>
+    </div>
+
+    <div class="testimonial-card">
+      <p class="testimonial-text">
+        “All the tutors are so knowledgeable!”
+      </p>
+      <div class="testimonial-author">
+        <span class="name">— Tay James "TJ".</span>
+        <span class="course">IT 354</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
     <!-- Center Info Section -->
     <div class="container mb-4">
         <style>
@@ -180,18 +279,17 @@
                 border-radius: 14px;
                 padding: 28px 32px;
                 box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-                margin-bottom: 24px;
+                
             }
 
             .center-info-section h2 {
-                color: #7d1c1c;
                 margin-bottom: 4px;
             }
 
             .center-info-section .section-subtitle {
                 color: #555;
                 font-size: 0.95rem;
-                margin-bottom: 20px;
+              
             }
 
             .info-card {
@@ -203,11 +301,11 @@
             }
 
             .info-card h3 {
-                color: #b71c1c;
+              
                 font-size: 0.82rem;
                 text-transform: uppercase;
                 letter-spacing: 0.7px;
-                margin-bottom: 12px;
+              
                 font-weight: 700;
             }
 
@@ -391,7 +489,7 @@
         display: flex;
         flex-direction: column;
         flex-wrap: wrap;
-        font-family: Arial, sans-serif;
+         font-family: 'Merriweather', serif;
         height: 100%;
         min-height: 256px;
         min-width: 360px;
@@ -407,13 +505,24 @@
 
       .commutes-initial-state {
         border-radius: 8px;
-        border: 1px solid #dadce0;
+        border: 5px solid #0f0f0f;
         display: flex;
         height: 98px;
-        margin-top: 8px;
+        margin-top: 15px;
         padding: 0 16px;
       }
-
+      .title2{
+        font-style: italic;
+       font-display: auto;
+       color:rgb(54, 7, 7)
+      }
+      .add-button {
+        padding: 12px 34px;
+        margin-top: 15px;
+        margin-bottom: 10px;
+        border-radius: 15px;
+        background-color: #fde7e7;
+      }
       .commutes-initial-state svg {
         align-self: center;
       }
@@ -990,33 +1099,15 @@
     <!-- End commutes SVGs -->
 
     <main class="commutes">
+      <h2 class="title2"> Need Directions ?</h2>
       <div class="commutes-map" aria-label="Map">
         <div class="map-view"></div>
       </div>
       <div>
         <div class="commutes-initial-state" style="display:none;"></div>
-            <button class="add-button">Make Route</button>
+            <button class="add-button">Get Directions</button>
         
       </div>
-      
-      <!--
-      <div class="commutes-info">
-        <div class="commutes-initial-state">
-          <svg aria-label="Directions Icon" width="53" height="53" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <use href="#commutes-initial-icon"/>
-          </svg>
-          <div class="description">
-            <h1 class="heading">Estimate commute time</h1>
-            <p>See travel time and directions for places nearby</p>
-          </div>
-          <button class="add-button" autofocus>
-            <svg aria-label="Add Icon" width="24px" height="24px" xmlns="http://www.w3.org/2000/svg">
-              <use href="#commutes-add-icon"/>
-            </svg>
-            <span class="label">Add destination</span>
-          </button>
-        </div>
--->
         <div class="commutes-destinations">
           <div class="destinations-container">
             <div class="destination-list"></div>
@@ -1599,11 +1690,6 @@
         });
       }
 
-      /**
-       * Updates view of commutes panel depending on the operation:
-       * - build/update destination template if add or edit.
-       * - remove destination from destination list and rebuild template.
-       */
       function updateCommutesPanel(
           destination, destinationIdx, destinationOperation) {
         switch (destinationOperation) {

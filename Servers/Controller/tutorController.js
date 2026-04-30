@@ -5,6 +5,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendCancellationConfirmation } = require('../middleware/emailService');
 
+const MAX_LOGIN_ATTEMPTS = 5;
+
 async function resolveTutorFromRequest(req) {
     if (!req.user || !req.user.id) {
         return null;
@@ -26,14 +28,38 @@ exports.submitLogin = async (req, res) => {
             return res.status(401).render('Tutor/login', { error: 'Invalid tutor credentials.' });
         }
 
+        if (tutor.lockedOut) {
+            return res.status(403).render('Tutor/login', { error: 'Account locked due to too many failed login attempts. Please contact the Admin.' });
+        }
+
         if (!tutor.active) {
             return res.status(403).render('Tutor/login', { error: 'Reach out to Admin. Tutor permissions denied.' });
         }
 
         const isMatch = await bcrypt.compare(password, tutor.passwordHash);
         if (!isMatch) {
+            tutor.loginAttempts = (tutor.loginAttempts || 0) + 1;
+            if (tutor.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+                tutor.active = false;
+                tutor.lockedOut = true;
+                await tutor.save();
+                await AuditLog.create({
+                    actor: tutor._id,
+                    actorName: tutor.name || tutor.email,
+                    action: 'lockout',
+                    targetType: 'User',
+                    targetId: tutor._id,
+                    metadata: { reason: 'Too many failed login attempts', email: tutor.email, role: 'tutor' }
+                });
+                return res.status(403).render('Tutor/login', { error: 'Account locked due to too many failed login attempts. Please contact the Admin.' });
+            }
+            await tutor.save();
             return res.status(401).render('Tutor/login', { error: 'Invalid tutor credentials.' });
         }
+
+        // Successful login — reset attempts
+        tutor.loginAttempts = 0;
+        await tutor.save();
 
         const token = jwt.sign(
               { id: tutor._id, name: tutor.name, email: tutor.email, role: tutor.role },

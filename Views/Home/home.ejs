@@ -368,34 +368,40 @@
                     <div class="info-card">
                         <h3>Center Hours</h3>
                         <table>
+                            <% const chDays = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+                               const chLabels = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+                               function fmtTime(t) {
+                                   const raw = String(t||'').trim();
+                                   if (!raw) return '';
+                                   if (/AM|PM/i.test(raw)) return raw;
+                                   const m = raw.match(/^(\d{1,2}):(\d{2})$/);
+                                   if (!m) return raw;
+                                   let h=+m[1],mn=+m[2];
+                                   const mer = h>=12?'PM':'AM';
+                                   if(h===0)h=12; else if(h>12)h-=12;
+                                   return h+':'+(mn<10?'0':'')+mn+' '+mer;
+                               }
+                               if (typeof centerHours !== 'undefined' && centerHours) {
+                                   chDays.forEach(function(day, i) {
+                                       const d = centerHours[day]; %>
                             <tr>
-                                <td>Monday</td>
-                                <td>9:00 AM - 6:00 PM</td>
+                                <td><%= chLabels[i] %></td>
+                                <% if (d && d.open && d.close) { %>
+                                    <td><%= fmtTime(d.open) %> - <%= fmtTime(d.close) %></td>
+                                <% } else { %>
+                                    <td class="closed">Closed</td>
+                                <% } %>
                             </tr>
-                            <tr>
-                                <td>Tuesday</td>
-                                <td>9:00 AM - 6:00 PM</td>
-                            </tr>
-                            <tr>
-                                <td>Wednesday</td>
-                                <td>9:00 AM - 6:00 PM</td>
-                            </tr>
-                            <tr>
-                                <td>Thursday</td>
-                                <td>9:00 AM - 6:00 PM</td>
-                            </tr>
-                            <tr>
-                                <td>Friday</td>
-                                <td>9:00 AM - 4:00 PM</td>
-                            </tr>
-                            <tr>
-                                <td>Saturday</td>
-                                <td class="closed">Closed</td>
-                            </tr>
-                            <tr>
-                                <td>Sunday</td>
-                                <td class="closed">Closed</td>
-                            </tr>
+                            <%   });
+                               } else { %>
+                            <tr><td>Monday</td><td>9:00 AM - 6:00 PM</td></tr>
+                            <tr><td>Tuesday</td><td>9:00 AM - 6:00 PM</td></tr>
+                            <tr><td>Wednesday</td><td>9:00 AM - 6:00 PM</td></tr>
+                            <tr><td>Thursday</td><td>9:00 AM - 6:00 PM</td></tr>
+                            <tr><td>Friday</td><td>9:00 AM - 4:00 PM</td></tr>
+                            <tr><td>Saturday</td><td class="closed">Closed</td></tr>
+                            <tr><td>Sunday</td><td class="closed">Closed</td></tr>
+                            <% } %>
                         </table>
                     </div>
                 </div>
@@ -404,73 +410,6 @@
         </section>
     </div>
 
-    <div id="appointments" class="container mb-4">
-        <section class="appointments-section">
-            <h2 class="mb-2">Available Appointments</h2>
-            <p class="text-muted mb-3">Scroll, pick a tutor slot, and book directly from home.</p>
-
-            <% if (notice) { %>
-                <div class="alert <%= noticeType === 'success' ? 'alert-success' : 'alert-danger' %>" role="alert">
-                    <%= notice %>
-                </div>
-                <% } %>
-
-                    <% if (!availableSlots || !availableSlots.length) { %>
-                        <div class="alert alert-light border">No upcoming appointment slots are currently available.
-                        </div>
-                        <% } else { %>
-                            <div class="table-responsive">
-                                <table class="table table-striped slot-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Tutor</th>
-                                            <th>Course</th>
-                                            <th>Start</th>
-                                            <th>End</th>
-                                            <th>Schedule</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <% availableSlots.forEach(function(slot) { %>
-                                            <tr>
-                                                <td>
-                                                    <strong>
-                                                        <%= slot.tutorName %>
-                                                    </strong><br>
-                                                    <small class="text-muted">
-                                                        <%= slot.tutorEmail %>
-                                                    </small>
-                                                </td>
-                                                <td>
-                                                    <%= slot.course %>
-                                                </td>
-                                                <td>
-                                                    <%= new Date(slot.start).toLocaleString('en-US', { hour12: true })
-                                                        %>
-                                                </td>
-                                                <td>
-                                                    <%= new Date(slot.end).toLocaleString('en-US', { hour12: true }) %>
-                                                </td>
-                                                <td>
-                                                    <form class="book-form" action="/studentLogin" method="GET">
-                                                        <input type="hidden" name="tutorId" value="<%= slot.tutorId %>">
-                                                        <input type="hidden" name="tutorName"
-                                                            value="<%= slot.tutorName %>">
-                                                        <input type="hidden" name="course" value="<%= slot.course %>">
-                                                        <input type="hidden" name="start" value="<%= slot.startIso %>">
-                                                        <input type="hidden" name="end" value="<%= slot.endIso %>">
-                                                        <button class="btn btn-sm btn-book full"
-                                                            type="submit">Book</button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                            <% }); %>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <% } %>
-        </section>
-    </div>
     <!-- Map -->
     <div class="ratio ratio-1x1 w-25 mx-auto">
         <style>

@@ -101,7 +101,9 @@ app.use('/', studentRoutes);
 app.use('/', tutorRoutes);
 
 app.get('/logout', (req, res) => {
-    res.setHeader('Set-Cookie', 'auth_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+    res.clearCookie('auth_token', { httpOnly: true, path: '/', sameSite: 'lax' });
+    res.clearCookie('_csrf', { path: '/' });
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     return res.redirect('/home');
 });
 

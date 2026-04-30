@@ -100,7 +100,7 @@
     <aside class="sidebar">
         <h3 style="color:#b71c1c;">Student Panel</h4>
         <a class="active" href="/studentDashboard">My Appointments</a>
-        <a href="/home">View Available Slots</a>
+        <a href="#bookSection">View Available Slots</a>
         <a href="/logout">Logout</a>
     </aside>
 
@@ -191,7 +191,7 @@
         </div>
 
         <!-- Book a New Appointment -->
-        <div class="panel">
+        <div class="panel" id="bookSection">
             <h3>Book a New Appointment</h3>
             <% if (!availableSlots.length) { %>
                 <div class="alert alert-light border">No upcoming slots available right now.</div>

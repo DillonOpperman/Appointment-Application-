@@ -34,6 +34,12 @@
             <div class="apptFilterBar">
                 <h2>View & Cancel Appointments</h2>
                 <div class="apptFilters">
+                    <select id="filterStatus" aria-label="Filter by status" onchange="applyFilters()">
+                        <option value="">Status: All</option>
+                        <option value="booked">Booked</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="completed">Completed</option>
+                    </select>
                     <select id="filterDate" aria-label="Filter by date" onchange="applyFilters()">
                         <option value="">Date: All</option>
                         <option value="newest">Newest First</option>
@@ -67,6 +73,7 @@
                             <th>Start</th>
                             <th>End</th>
                             <th>Status</th>
+                            <th>Notes</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -75,7 +82,8 @@
                         <tr
                             data-start="<%= appt.start ? appt.start.getTime() : 0 %>"
                             data-student="<%= (appt.student && appt.student.name) ? appt.student.name.toLowerCase() : '' %>"
-                            data-course="<%= appt.course || '' %>">
+                            data-course="<%= appt.course || '' %>"
+                            data-status="<%= appt.status || '' %>">
                             <td><%= appt.student ? appt.student.name : 'N/A' %></td>
                             <td><%= appt.tutor ? appt.tutor.name : 'N/A' %></td>
                             <td><%= appt.course %></td>
@@ -85,6 +93,20 @@
                                 <span class="badge badge-<%= appt.status %>">
                                     <%= appt.status %>
                                 </span>
+                            </td>
+                            <td>
+                                <% if (appt.comments && appt.comments.length > 0) { %>
+                                    <details>
+                                        <summary style="cursor:pointer; font-size:12px; color:#555;"><%= appt.comments.length %> note<%= appt.comments.length > 1 ? 's' : '' %></summary>
+                                        <% appt.comments.forEach(function(c) { %>
+                                            <div style="margin-top:4px; font-size:12px; background:#f9f9f9; border-left:3px solid #CE1126; padding:4px 8px;">
+                                                <strong><%= c.author ? c.author.name : 'Tutor' %>:</strong> <%= c.commentText %>
+                                            </div>
+                                        <% }); %>
+                                    </details>
+                                <% } else { %>
+                                    <span style="color:#aaa; font-size:12px;">—</span>
+                                <% } %>
                             </td>
                             <td>
                                 <% if (appt.status === 'booked') { %>
@@ -118,6 +140,55 @@
                     <%= notice %>
                 </div>
             <% } %>
+
+            <!-- Edit Center Hours -->
+            <div class="addUserForm" style="margin-bottom:24px;">
+                <h3>Edit Center Hours</h3>
+                <form action="/admin/centerHours" method="POST" class="userForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <table style="border-collapse:collapse; font-size:14px; width:100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; padding:6px 10px;">Day</th>
+                                <th style="text-align:left; padding:6px 10px;">Open (leave blank = Closed)</th>
+                                <th style="text-align:left; padding:6px 10px;">Close</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% const chDays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+                               const chLabels = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                               const ch = typeof centerHours !== 'undefined' && centerHours ? centerHours : {};
+                               function toInputTime(t) {
+                                   const raw = String(t || '').trim();
+                                   const h24 = raw.match(/^(\d{1,2}):(\d{2})$/);
+                                   if (h24) return String(+h24[1]).padStart(2,'0')+':'+h24[2];
+                                   const h12 = raw.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                                   if (!h12) return '';
+                                   let h=+h12[1],mn=+h12[2];
+                                   if(h12[3].toUpperCase()==='PM'&&h!==12)h+=12;
+                                   if(h12[3].toUpperCase()==='AM'&&h===12)h=0;
+                                   return String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0');
+                               }
+                               chDays.forEach(function(day, i) { %>
+                            <tr>
+                                <td style="padding:4px 10px;"><%= chLabels[i] %></td>
+                                <td style="padding:4px 10px;">
+                                    <input type="time" name="<%= day %>_open"
+                                        value="<%= (ch[day] && ch[day].open) ? toInputTime(ch[day].open) : '' %>"
+                                        style="padding:4px; border:1px solid #ccc; border-radius:4px;" />
+                                </td>
+                                <td style="padding:4px 10px;">
+                                    <input type="time" name="<%= day %>_close"
+                                        value="<%= (ch[day] && ch[day].close) ? toInputTime(ch[day].close) : '' %>"
+                                        style="padding:4px; border:1px solid #ccc; border-radius:4px;" />
+                                </td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btnAdd" style="margin-top:12px;">Save Center Hours</button>
+                </form>
+            </div>
 
             <div class="addUserForm">
                 <h3>Add Availability Block</h3>
@@ -222,11 +293,22 @@
                     <input type="text" name="name" placeholder="Full Name" required />
                     <input type="email" name="email" placeholder="Email" required />
                     <input type="password" name="password" placeholder="Password" required />
-                    <select name="role" required>
+                    <select name="role" id="addUserRole" required onchange="toggleCoursesField()">
                         <option value="">Select Role</option>
                         <option value="student">Student</option>
                         <option value="tutor">Tutor</option>
                     </select>
+                    <div id="enrolledCoursesField" style="display:none;">
+                        <input type="text" name="enrolledCourses"
+                            placeholder="Enrolled Courses (comma-separated, e.g. IT 330, IT 354)"
+                            list="courseOptions" />
+                        <datalist id="courseOptions">
+                            <% (typeof availableCourses !== 'undefined' ? availableCourses : []).forEach(function(c) { %>
+                                <option value="<%= c %>"><%= c %></option>
+                            <% }); %>
+                        </datalist>
+                        <small style="color:#555;">Only tutors matching these courses will be shown to this student.</small>
+                    </div>
                     <button type="submit" class="btnAdd">Add User</button>
                 </form>
             </div>
@@ -241,6 +323,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Courses</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -252,17 +335,35 @@
                             <td><%= user.email %></td>
                             <td><%= user.role %></td>
                             <td>
+                                <% if (user.role === 'student' && user.enrolledCourses && user.enrolledCourses.length) { %>
+                                    <small><%= user.enrolledCourses.join(', ') %></small>
+                                <% } else { %>
+                                    <small class="text-muted">—</small>
+                                <% } %>
+                            </td>
+                            <td>
                                 <span class="badge <%= user.active ? 'badge-booked' : 'badge-cancelled' %>">
                                     <%= user.active ? 'Active' : 'Inactive' %>
                                 </span>
                             </td>
-                            <td>
+                            <td style="display:flex; flex-direction:column; gap:6px;">
                                 <form action="/toggleUserActive/<%= user._id %>" method="POST">
                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                     <button type="submit" class="<%= user.active ? 'btnCancel' : 'btnActivate' %>">
                                         <%= user.active ? 'Deactivate' : 'Activate' %>
                                     </button>
                                 </form>
+                                <% if (user.role === 'student') { %>
+                                <form action="/updateUserCourses/<%= user._id %>" method="POST" style="display:flex; gap:4px; align-items:center;">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="text" name="enrolledCourses"
+                                        value="<%= (user.enrolledCourses && user.enrolledCourses.length) ? user.enrolledCourses.join(', ') : '' %>"
+                                        placeholder="e.g. IT 330, IT 358"
+                                        list="courseOptions"
+                                        style="font-size:12px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; width:160px;" />
+                                    <button type="submit" class="btnAdd" style="font-size:12px; padding:4px 8px;">Save Courses</button>
+                                </form>
+                                <% } %>
                             </td>
                         </tr>
                         <% }); %>
@@ -371,6 +472,11 @@
     openTab('<%= selectedTab %>');
     syncAdminAvailabilityFields();
 
+    function toggleCoursesField() {
+        var role = document.getElementById('addUserRole').value;
+        document.getElementById('enrolledCoursesField').style.display = role === 'student' ? 'block' : 'none';
+    }
+
     var blockTypeElement = document.getElementById('adminBlockType');
     if (blockTypeElement) {
         blockTypeElement.addEventListener('change', syncAdminAvailabilityFields);
@@ -384,6 +490,7 @@
     }
 
     function applyFilters() {
+        var statusFilter = document.getElementById('filterStatus').value;
         var dateFilter = document.getElementById('filterDate').value;
         var studentFilter = document.getElementById('filterStudent').value;
         var courseFilter = document.getElementById('filterCourse').value;
@@ -392,10 +499,13 @@
         if (!tbody) return;
         var rows = Array.from(tbody.querySelectorAll('tr'));
 
-        // Course filter — hide/show
+        // Course and status filter — hide/show
         rows.forEach(function(row) {
             var course = row.getAttribute('data-course') || '';
-            row.style.display = (courseFilter === '' || course === courseFilter) ? '' : 'none';
+            var status = row.getAttribute('data-status') || '';
+            var courseOk = (courseFilter === '' || course === courseFilter);
+            var statusOk = (statusFilter === '' || status === statusFilter);
+            row.style.display = (courseOk && statusOk) ? '' : 'none';
         });
 
         // Sort visible rows
@@ -419,6 +529,7 @@
     }
 
     function clearFilters() {
+        document.getElementById('filterStatus').value = '';
         document.getElementById('filterDate').value = '';
         document.getElementById('filterStudent').value = '';
         document.getElementById('filterCourse').value = '';
@@ -441,8 +552,10 @@
         document.getElementById('editModal').classList.remove('open');
     }
 
-    document.getElementById('editModal').addEventListener('click', function(e) {
-        if (e.target === this) closeEditModal();
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
     });
 </script>
 

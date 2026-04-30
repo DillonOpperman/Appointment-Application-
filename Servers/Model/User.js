@@ -40,6 +40,18 @@ const userSchema = new mongoose.Schema(
             default: null,
             lowercase: true,
             trim: true
+        },
+        loginAttempts: {
+            type: Number,
+            default: 0
+        },
+        lockedOut: {
+            type: Boolean,
+            default: false
+        },
+        enrolledCourses: {
+            type: [String],
+            default: []
         }
     },
     { timestamps: true }

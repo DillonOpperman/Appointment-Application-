@@ -12,5 +12,7 @@ router.post('/admin/availability', authenticatePageJWT, authorizeRoles('admin'),
 router.post('/admin/availability/delete/:id', authenticatePageJWT, authorizeRoles('admin'), adminController.deleteAvailability);
 router.post('/addUser', authenticatePageJWT, authorizeRoles('admin'), adminController.addUser);
 router.post('/toggleUserActive/:id', authenticatePageJWT, authorizeRoles('admin'), adminController.toggleUserActive);
+router.post('/updateUserCourses/:id', authenticatePageJWT, authorizeRoles('admin'), adminController.updateUserCourses);
+router.post('/admin/centerHours', authenticatePageJWT, authorizeRoles('admin'), adminController.updateCenterHours);
 
 module.exports = router;

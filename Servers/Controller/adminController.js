@@ -7,54 +7,6 @@ const jwt = require('jsonwebtoken');
 const NotificationLog = require('../Model/NotificationLog');
 const { sendCancellationConfirmation } = require('../middleware/emailService');
 
-function parseTimeToMinutes(timeValue) {
-    const raw = String(timeValue || '').trim();
-    if (!raw) {
-        return null;
-    }
-
-    const twelveHourMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (twelveHourMatch) {
-        let hours = Number(twelveHourMatch[1]);
-        const minutes = Number(twelveHourMatch[2]);
-        const meridiem = twelveHourMatch[3].toUpperCase();
-
-        if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
-            return null;
-        }
-
-        if (hours === 12) {
-            hours = 0;
-        }
-        if (meridiem === 'PM') {
-            hours += 12;
-        }
-
-        return hours * 60 + minutes;
-    }
-
-    const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})$/);
-    if (!twentyFourHourMatch) {
-        return null;
-    }
-
-    const hours = Number(twentyFourHourMatch[1]);
-    const minutes = Number(twentyFourHourMatch[2]);
-
-    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        return null;
-    }
-
-    return hours * 60 + minutes;
-}
-
-function formatMinutesTo12Hour(totalMinutes) {
-    const hours24 = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const meridiem = hours24 >= 12 ? 'PM' : 'AM';
-    const hours12 = ((hours24 + 11) % 12) + 1;
-    return `${hours12}:${String(minutes).padStart(2, '0')} ${meridiem}`;
-}
 
 function parseTimeToMinutes(timeValue) {
     const raw = String(timeValue || '').trim();
@@ -298,7 +250,20 @@ exports.editAppointment = async (req, res) => {
 exports.addUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
+        const allowedRoles = ['student', 'tutor'];
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).send('Role must be student or tutor.');
+        }
+        if (!name || !email || !password) {
+            return res.status(400).send('Name, email, and password are required.');
+        }
+        if (password.length < 8) {
+            return res.status(400).send('Password must be at least 8 characters.');
+        }
+        
         const existing = await User.findOne({ email: email.toLowerCase() });
+        
+        
         if (existing) {
             return res.status(409).send('User with that email already exists.');
         }

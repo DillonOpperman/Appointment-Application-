@@ -32,7 +32,7 @@ const rateLimit = require('express-rate-limit');
 const loginLimiter = rateLimit({
     windowMs: 1 * 60 * 1000,
     max: 5,
-    message: 'Too many login attempts. Please try again in 1 minutes.',
+    message: 'Too many login attempts. Please try again in 1 minute.',
     standardHeaders: true,
     legacyHeaders: false
 });
@@ -109,22 +109,11 @@ app.get('/', (req, res) => {
  res.redirect('/home');
 });
 
-// Student Routes 
-//app.get('/studentLogin',(req, res) => {
-    //res.sendFile(path.join(__dirname,'Views/html/student/loginPage.html'));});
-//app.post('/submitStudentLogin',(req,res) => {
-    //res.send("Submitted student email: " + req.body.studentEmail + " Submitted student pass: " + req.body.studentPassword); console.log(req.body);});
-
-//app.get('/adminDashboard', (req, res) => {
-//    res.sendFile(path.join(__dirname, 'Views/html/admin/adminDashboard.html'));
-//});
-
-//app.get('/adminLogin',(req, res) => {res.sendFile(path.join(__dirname,'Views/html/admin/adminLoginPage.html'));});
-//app.post('/submitAdminLogin',(req,res) => {console.log(req.body); res.redirect('/adminDashboard');});
-
-
 
 async function ensureSeedUsers() {
+    if (process.env.NODE_ENV === 'production') {
+        return;
+    }
     const seedPassword = 'RyzenDell3D!';
     const passwordHash = await bcrypt.hash(seedPassword, 12);
 

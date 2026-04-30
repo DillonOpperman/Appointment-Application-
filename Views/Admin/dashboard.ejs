@@ -441,9 +441,13 @@
         document.getElementById('editModal').classList.remove('open');
     }
 
-    document.getElementById('editModal').addEventListener('click', function(e) {
+    var editModalEl = document.getElementById('editModal');
+if (editModalEl) {
+    editModalEl.addEventListener('click', function(e) {
         if (e.target === this) closeEditModal();
     });
+}
+
 </script>
 
 <div id="editModal" class="modal-overlay">

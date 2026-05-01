@@ -95,7 +95,7 @@ router.get('/google/callback', authenticatePageJWT, authorizeRoles('student'), a
             return res.redirect('/studentLogin?error=not_authenticated');
         }
 
-        if (state || String(state) !== String(studentId)) {
+        if (!state || String(state) !== String(studentId)) {
             return res.redirect('/studentDashboard?error=oauth_state_mismatch');
         }
 

@@ -6,7 +6,7 @@
 
 **Password Hashing**
 Passwords are hashed using bcrypt with a salt round of 12 before being stored in the database. Plain-text passwords are not saved.
-Location: authRoutes.js, adminController.js, studentController.js
+Location: adminController.js (addUser), server.js (seed accounts)
 
 **JWT Authentication**
 All protected routes require a valid signed JSON Web Token. Tokens are verified against a secret stored in environment variables.
@@ -23,6 +23,10 @@ Location: server.js
 **Login Rate Limiting**
 Login endpoints are limited to 5 attempts per minute per IP using express-rate-limit. This protects against brute-force attacks.
 Location: server.js (applied to all three login routes and the API login endpoint)
+
+**Account Lockout**
+All three login controllers track failed attempts in the database. After 5 consecutive failed logins the account is hard-locked and cannot authenticate until an admin resets it. This works independently of the IP-based rate limiter.
+Location: adminController.js, studentController.js, tutorController.js
 
 **HttpOnly and SameSite Cookies**
 The auth token cookie is set with HttpOnly and SameSite=Lax flags, preventing client-side JavaScript from reading it.
@@ -47,3 +51,4 @@ Location: AuditLog.js, adminController.js
 **OAuth 2.0 for Google Calendar Access**
 The Calendar integration uses OAuth 2.0 with offline refresh tokens. Users must grant explicit consent through Google's consent screen before the app can access their calendar.
 Location: googleCalendar.js, authRoutes.js
+

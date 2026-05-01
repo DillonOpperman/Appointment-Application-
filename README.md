@@ -2,6 +2,57 @@
 
 Web application for managing tutoring appointments at the IT Learning Center. Node.js + Express + MongoDB, server-rendered with EJS.
 
+## Team Members and Roles
+
+### Dillon Opperman — Team Lead
+Responsibilities as Team Lead: repository and database setup, milestone coordination, code review, and integration of all branches.
+
+- Created the GitHub repository and MongoDB Atlas database; connected the application to it
+- Completed tutor appointment viewing requirements
+- Built tutor availability block management (add/edit/delete recurring and exception blocks)
+- Implemented admin controls to activate and deactivate student and tutor accounts
+- Created all tutor EJS template pages
+- Built email cancellation notifications via Nodemailer; created the shared Gmail account for outbound mail
+- Built the public-facing slot availability page and the "login to book" flow for guests
+- Created the admin cancel and filter functions for the appointments table
+- Implemented the `CenterHours` MongoDB model and the admin-editable "Manage Center Hours" tab
+- Made the home page display center hours dynamically from the database (no login required)
+- Filtered student dashboard slots to only show times within DB center hours
+- Added center hours validation to booking and admin availability creation
+- Added admin view of tutor notes on appointments
+- Implemented Google Calendar OAuth 2.0 integration (token exchange, refresh, event creation/deletion, duplicate prevention, cancellation sync)
+- Hardened auth: JWT in HttpOnly cookies, role-based middleware, CSRF protection, rate limiting, account lockout on failed logins, production seed guard
+
+### Stefan Tujarov — Facilitator
+- Created admin dashboard and admin login EJS pages
+- Worked on admin cancel appointment function
+- Built Nodemailer email confirmations for admin and student (booking and cancellation)
+- Implemented tutor session notes and show/no-show marking on appointments
+- Built the appointment filter and sort system on the admin dashboard
+- Established the project file/folder structure (MVC layout)
+- Built the non-authenticated home page for center hours and general info
+- Worked on student booking and cancellation flows
+- Lighthouse/SEO fixes: added viewport meta tags, meta descriptions, and aria labels across all pages
+- Fixed JavaScript console error on admin dashboard (null-check guard on edit modal)
+- Removed dead code, duplicate function definitions, old HTML files, and unused route files
+- Added input validation to the admin add-user endpoint (role whitelist, required fields, password length)
+
+### Stephany — Designer / Programmer
+- Created the non-authenticated user home page
+- Designed original CSS styling for home, student, admin, and tutor pages
+- Built navigation from home page to admin/student/tutor pages
+- Created student and home EJS pages integrated into the current MVC structure
+- Additional UI improvements and visual polish across all role dashboards
+
+### Rudra — Programmer
+- Researched and planned student page functionality
+- Created student EJS templates
+- Worked on student appointment booking and cancellation
+- Created student objects in the database
+- Assisted with auth token fixes and authentication flow
+
+---
+
 ## Overview
 
 The system supports three authenticated roles:
@@ -61,13 +112,7 @@ cd Appointment-Application-
 npm install
 ```
 
-3. Create the environment file from the template:
-
-```bash
-cp .env.example .env
-```
-
-4. Update `.env` with your values (see Environment Variables section).
+3. Create a `.env` file in the project root and fill in the required values (see Environment Variables section).
 
 5. Start the app:
 
@@ -207,7 +252,6 @@ Auth / session utility:
 Appointment-Application-/
 |-- server.js
 |-- package.json
-|-- .env.example
 |-- Assets/
 |   |-- css/
 |   |-- JS/
@@ -252,38 +296,41 @@ The application implements the following controls:
 - **Google Calendar "Cannot GET /auth/google"**: verify `authRoutes` is mounted at `/auth` in `server.js`.
 - **Google Calendar "Missing required parameter: client_id"**: the three `GOOGLE_*` vars are missing from your `.env`.
 
-AI Tool Usage:
-Auth and login
+## AI Use
+
+AI (GitHub Copilot Chat) was used to assist with the following parts of the project. All code was reviewed and verified by the teammate listed.
+
+**Auth and login** — verified by Dillon Opperman
 
 Built JWT login using Http Only cookies with role-based checks that always recheck the database to make sure the user is still active.
 Added a global middleware that reads the JWT cookie on every request so we always know who's logged in, plus a shared header that works for all roles.
 Helped fix a "login failed" error turned out they were missing JWT_SECRET in .env file.
 
-Database models
+**Database models** — verified by Dillon Opperman
 
 Changed appointment comments to use a proper sub-document array with timestamps.
 Added student/tutor names directly on Appointment and actor name on AuditLog so the data is readable without extra lookups; also added name to the JWT so controllers can use it.
 Added Google-related fields to User and Appointment (calendar event ID, sync timestamp) for Google Calendar support.
 
-Booking logic and professor feedback fixes
+**Booking logic and professor feedback fixes** — verified by Dillon Opperman
 
 Removed the code created student accounts during login now only admins can create users.
 Added checks for both tutor and student time conflicts when booking so students can't double book with different tutors.
 Added overlap checking when creating availability blocks so admins can't accidentally add conflicting time slots.
 Added the same overlap checks to the admin edit appointment flow so rescheduling follows the same rules as booking.
 
-Email system
+**Email system** — verified by Dillon Opperman
 
 Built a sendMailWithLog() helper that saves a log entry every time an email is sent (or fails); rewrote all three email functions (booking, cancel, reminder) to use it.
 Built an automatic reminder system that sends emails 24 hours before appointments, checks the log so it doesn't send duplicates, and runs every 15 minutes.
 
-Google Calendar integration
+**Google Calendar integration** — verified by Dillon Opperman
 
 Full OAuth 2.0 setup with the googleapis package handles the auth URL, token exchange, grabbing the user's Google email, refreshing tokens, and creating/deleting calendar events. Includes a fallback that finds and deletes events by name and time if the event ID wasn't saved.
 Prevents duplicate calendar entries if an appointment is already synced, it skips instead of creating another event.
 When a student cancels, the matching Google Calendar event gets deleted too. For older appointments without a saved event ID, it searches by name and time to find the right one.
 
-Admin dashboard features
+**Admin dashboard features** — verified by Stefan Tujarov
 
 Edit appointment modal with date/time pickers that enforces the same overlap rules as booking.
 Filter and sort bar on the appointments table (by date, student name, course) all done in the browser with no page reload.
@@ -291,19 +338,17 @@ Activity Logs tab showing the last 25 audit log and notification log entries wit
 Success/error banners after actions like canceling, editing, or adding users.
 Made sure every important action (create user, add/delete availability, book, cancel, edit) writes an audit log entry with names and course info.
 
-Data migration
+**Data migration** — verified by Dillon Opperman
 
-One-time script to convert all availability block times from 24-hour formatto 12-hour format.
+One-time script to convert all availability block times from 24-hour format to 12-hour format.
 
-Security fixes and cleanup 
+**Security fixes and cleanup** — verified by Dillon Opperman and Stefan Tujarov
 
 Fixed the Google OAuth callback so it rejects requests that are missing the state parameter, not just ones with the wrong value.
 Added a check on the add-user route so only student or tutor accounts can be created no one can sneak in an admin role through a manual request. Also added checks for required fields and minimum password length.
 Made it so the test/demo accounts only get created in development mode, not in production.
 Fixed a bug where canceling an appointment wrote two audit log entries instead of one.
 General cleanup: removed duplicate function definitions, old commented-out code, unused route files, and the old HTML files that were replaced by EJS templates.
-
-Verification: team verifier Dillon Opperman.
 
 For the full session-by-session log with dates, prompt summaries, and follow-up changes, see [AI_LOG.md](AI_LOG.md).
 

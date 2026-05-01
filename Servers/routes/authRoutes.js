@@ -8,53 +8,6 @@ const { getAuthUrl, getTokensFromCode, getGoogleAccountEmail } = require('../mid
 
 const router = express.Router();
 
-/*router.post(
-    '/register',
-    [
-        body('name').trim().notEmpty().withMessage('Name is required.'),
-        body('email').isEmail().withMessage('Valid email is required.'),
-        body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
-        body('role').isIn(['student', 'tutor', 'admin']).withMessage('Role must be student, tutor, or admin.')
-    ],
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { name, email, password, role } = req.body;
-
-        try {
-            const existingUser = await User.findOne({ email: email.toLowerCase() });
-            if (existingUser) {
-                return res.status(409).json({ message: 'User with that email already exists.' });
-            }
-
-            const passwordHash = await bcrypt.hash(password, 12);
-            const createdUser = await User.create({
-                name,
-                email,
-                role,
-                passwordHash,
-                active: true
-            });
-
-            return res.status(201).json({
-                message: 'User registered successfully.',
-                user: {
-                    id: createdUser._id,
-                    name: createdUser.name,
-                    email: createdUser.email,
-                    role: createdUser.role
-                }
-            });
-        } catch (error) {
-            return res.status(500).json({ message: 'Registration failed.', error: error.message });
-        }
-    }
-);
-*/
-
 router.post(
     '/login',
     [
@@ -142,7 +95,7 @@ router.get('/google/callback', authenticatePageJWT, authorizeRoles('student'), a
             return res.redirect('/studentLogin?error=not_authenticated');
         }
 
-        if (state && String(state) !== String(studentId)) {
+        if (state || String(state) !== String(studentId)) {
             return res.redirect('/studentDashboard?error=oauth_state_mismatch');
         }
 

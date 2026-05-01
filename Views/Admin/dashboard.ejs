@@ -553,10 +553,14 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('editModal').addEventListener('click', function(e) {
-            if (e.target === this) closeEditModal();
-        });
+        var editModalEl = document.getElementById('editModal');
+        if (editModalEl) {
+            editModalEl.addEventListener('click', function(e) {
+                if (e.target === this) closeEditModal();
+            });
+        }
     });
+
 </script>
 
 <div id="editModal" class="modal-overlay">

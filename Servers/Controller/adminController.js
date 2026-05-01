@@ -12,24 +12,43 @@ const MAX_LOGIN_ATTEMPTS = 5;
 
 function parseTimeToMinutes(timeValue) {
     const raw = String(timeValue || '').trim();
-    if (!raw) return null;
+    if (!raw) {
+        return null;
+    }
 
     const twelveHourMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
     if (twelveHourMatch) {
         let hours = Number(twelveHourMatch[1]);
         const minutes = Number(twelveHourMatch[2]);
         const meridiem = twelveHourMatch[3].toUpperCase();
-        if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) return null;
-        if (hours === 12) hours = 0;
-        if (meridiem === 'PM') hours += 12;
+
+        if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+            return null;
+        }
+
+        if (hours === 12) {
+            hours = 0;
+        }
+        if (meridiem === 'PM') {
+            hours += 12;
+        }
+
         return hours * 60 + minutes;
     }
 
     const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})$/);
-    if (!twentyFourHourMatch) return null;
+    if (!twentyFourHourMatch) {
+        return null;
+    }
+
     const hours = Number(twentyFourHourMatch[1]);
     const minutes = Number(twentyFourHourMatch[2]);
-    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return null;
+    }
+
+
     return hours * 60 + minutes;
 }
 
@@ -261,10 +280,20 @@ exports.editAppointment = async (req, res) => {
 exports.addUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        if (!name || !email || !password || !role) {
+        const allowedRoles = ['student', 'tutor'];
+        if (!allowedRoles.includes(role)) {
+            return res.redirect('/adminDashboard?tab=users&notice=Role+must+be+student+or+tutor&noticeType=danger');
+        }
+        if (!name || !email || !password) {
             return res.redirect('/adminDashboard?tab=users&notice=All+fields+are+required&noticeType=danger');
         }
+        if (password.length < 8) {
+            return res.redirect('/adminDashboard?tab=users&notice=Password+must+be+at+least+8+characters&noticeType=danger');
+        }
+
         const existing = await User.findOne({ email: email.toLowerCase() });
+        
+        
         if (existing) {
             return res.redirect('/adminDashboard?tab=users&notice=A+user+with+that+email+already+exists&noticeType=danger');
         }

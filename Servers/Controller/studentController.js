@@ -120,8 +120,6 @@ async function authenticateOrCreateStudent(studentEmail, studentPassword) {
     return { student };
 }
 
-
-
 async function createAppointmentForSlot({ tutorId, course, start, end, student }) {
     const tutor = await User.findOne({ _id: tutorId, role: 'tutor', active: true }).select('_id name email');
     if (!tutor) {
@@ -193,18 +191,6 @@ const studentOverlap = await Appointment.findOne({
 if (studentOverlap) {
     return { errorCode: 'student_conflict' };
 }
-
-    /*const overlap = await Appointment.findOne({
-        tutor: tutor._id,
-        status: 'booked',
-        start: { $lt: endDate },
-        end: { $gt: startDate }
-    }).select('_id');
-
-    if (overlap) {
-        return { errorCode: 'slot_taken' };
-    }
-    */
 
 
     const appointment = await Appointment.create({
@@ -494,18 +480,6 @@ exports.cancelAppointment = async (req, res) => {
         appointment.status = 'cancelled';
         await appointment.save();
 
-        await AuditLog.create({
-            actor: student._id,
-            action: 'cancel_appointment',
-            targetType: 'Appointment',
-            targetId: appointment._id,
-            metadata: {
-                tutorId: appointment.tutor._id,
-                course: appointment.course,
-                startTime: appointment.start,
-                endTime: appointment.end
-            }
-        });
 
         sendCancellationConfirmation({
             studentEmail: student.email,
